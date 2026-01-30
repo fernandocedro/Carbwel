@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root {
+  --brand-red: 220 38 38; /* red-600 */
+  --ink: 15 23 42;        /* slate-900 */
+}
+
+html, body {
+  height: 100%;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
