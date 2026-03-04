@@ -3,7 +3,7 @@ import Header from "./components/Header";
 import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
-// Função corrigida para buscar os produtos reais da Carbwel
+// Função única e corrigida para buscar os produtos reais
 async function getCarbwelProducts() {
   const ACCESS_TOKEN = "APP_USR-567742962988102-030411-c7f404e601f91d7c851a6462c47e53d6-72983036";
   const SELLER_ID = "72983036";
@@ -13,20 +13,19 @@ async function getCarbwelProducts() {
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`
       },
-      next: { revalidate: 60 } // Atualiza o cache a cada minuto
+      next: { revalidate: 60 } 
     });
 
     const data = await res.json();
     
-    // Retorna os resultados ou uma lista vazia se houver erro na API
     if (data.error) {
-      console.error("Erro da API do Mercado Livre:", data.message);
+      console.error("Erro na API do Mercado Livre:", data.message);
       return [];
     }
 
     return data.results || [];
   } catch (error) {
-    console.error("Erro de conexão com o Mercado Livre:", error);
+    console.error("Erro de conexão:", error);
     return [];
   }
 }
@@ -77,10 +76,11 @@ export default async function Home() {
             ))}
           </div>
 
-          {/* Mensagem caso não encontre nada */}
+          {/* Exibe mensagem apenas se a lista vier realmente vazia */}
           {products.length === 0 && (
-            <div className="text-center py-20 border-2 border-dashed rounded-xl">
+            <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
               <p className="text-neutral-500">Nenhum produto encontrado nos anúncios ativos da Carbwel.</p>
+              <p className="text-xs text-neutral-400 mt-2">Verifique se há anúncios ativos para o ID {72983036}</p>
             </div>
           )}
         </section>
