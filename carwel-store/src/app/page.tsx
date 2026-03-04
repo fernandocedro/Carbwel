@@ -1,11 +1,13 @@
+export const dynamic = 'force-dynamic';
+
 import TopBar from "./components/TopBar";
 import Header from "./components/Header";
 import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
 async function getCarbwelProducts() {
-  // SEU TOKEN ATUALIZADO E DESTRAVADO
-  const ACCESS_TOKEN = "APP_USR-567742962988102-030412-533d601493e017bbfe6c20ec5c33440f-72983036";
+  // SEU TOKEN ATUALIZADO (Validado às 14:00 de hoje)
+  const ACCESS_TOKEN = "APP_USR-567742962988102-030412-7e5bc834278e085c9431f391f896ff35-72983036";
   const SELLER_ID = "72983036";
 
   try {
@@ -17,9 +19,15 @@ async function getCarbwelProducts() {
     });
 
     const data = await res.json();
+    
+    if (data.error) {
+      console.error("Erro API ML:", data.message);
+      return [];
+    }
+
     return data.results || [];
   } catch (error) {
-    console.error("Erro na busca:", error);
+    console.error("Erro de conexão:", error);
     return [];
   }
 }
@@ -71,8 +79,8 @@ export default async function Home() {
 
           {products.length === 0 && (
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
-              <p className="text-neutral-500 font-medium">Carregando anúncios ativos da Carbwel...</p>
-              <p className="text-xs text-neutral-400 mt-2 italic">Se esta mensagem persistir, verifique o status do deploy na Vercel.</p>
+              <p className="text-neutral-500 font-medium">Nenhum produto encontrado.</p>
+              <p className="text-xs text-neutral-400 mt-2 italic">Dica: Verifique se os anúncios no Mercado Livre estão "Ativos".</p>
             </div>
           )}
         </section>
