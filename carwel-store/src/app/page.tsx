@@ -5,7 +5,7 @@ import HeroCarousel from "./components/HeroCarousel";
 
 async function getCarbwelProducts() {
   // SEU TOKEN ATUALIZADO E DESTRAVADO
-  const ACCESS_TOKEN = "APP_USR-567742962988102-030412-7e5bc834278e085c9431f391f896ff35-72983036";
+  const ACCESS_TOKEN = "APP_USR-567742962988102-030412-533d601493e017bbfe6c20ec5c33440f-72983036";
   const SELLER_ID = "72983036";
 
   try {
