@@ -4,16 +4,17 @@ import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
 async function getCarbwelProducts() {
-  // SEU TOKEN MAIS RECENTE
+  // Use este token que você acabou de gerar (o que aparece no botão "Ver tokens")
   const ACCESS_TOKEN = "APP_USR-567742962988102-030412-4bfc89744966d31c36532932c008e8fe-72983036";
-  const SELLER_ID = "72983036";
+  const SELLER_ID = "72983036"; // Confirmado na imagem image_cbbe1c.png
 
   try {
+    // Adicionamos 'cache: no-store' para garantir que ele busque os dados novos agora
     const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}`, {
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`
       },
-      next: { revalidate: 60 } 
+      cache: 'no-store' 
     });
 
     const data = await res.json();
@@ -78,7 +79,7 @@ export default async function Home() {
           {products.length === 0 && (
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
               <p className="text-neutral-500 font-medium">Nenhum produto encontrado nos anúncios ativos da Carbwel.</p>
-              <p className="text-xs text-neutral-400 mt-2 italic">Dica: Verifique se os anúncios no Mercado Livre estão com status "Ativo".</p>
+              <p className="text-xs text-neutral-400 mt-2 italic">Dica: Confirme se os anúncios do ID {SELLER_ID} estão como "Ativos" no Mercado Livre.</p>
             </div>
           )}
         </section>
