@@ -3,7 +3,7 @@ import Header from "./components/Header";
 import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
-// Definindo o que é um produto para a Vercel não dar erro
+// Interface para garantir que a build da Vercel não falhe
 interface MLProduct {
   id: string;
   title: string;
@@ -13,6 +13,7 @@ interface MLProduct {
 }
 
 async function getCarbwelProducts(): Promise<MLProduct[]> {
+  // Use exatamente estas credenciais que já validamos
   const ACCESS_TOKEN = "APP_USR-567742962988102-030412-4bfc89744966d31c36532932c008e8fe-72983036";
   const SELLER_ID = "72983036";
 
@@ -21,12 +22,15 @@ async function getCarbwelProducts(): Promise<MLProduct[]> {
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`
       },
-      cache: 'no-store' 
+      cache: 'no-store' // Isso força a busca de dados novos a cada acesso
     });
+
+    if (!res.ok) return [];
 
     const data = await res.json();
     return data.results || [];
   } catch (error) {
+    console.error("Erro na busca de produtos:", error);
     return [];
   }
 }
@@ -49,7 +53,7 @@ export default async function Home() {
             {products.map((product) => (
               <div key={product.id} className="group border p-4 rounded-lg hover:shadow-xl transition-all bg-white flex flex-col justify-between">
                 <div>
-                  <div className="aspect-square relative mb-4 overflow-hidden rounded-md bg-gray-100">
+                  <div className="aspect-square relative mb-4 overflow-hidden rounded-md bg-gray-50">
                     <img 
                       src={product.thumbnail.replace("-I.jpg", "-O.jpg")} 
                       alt={product.title}
@@ -79,7 +83,7 @@ export default async function Home() {
           {products.length === 0 && (
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
               <p className="text-neutral-500 font-medium">Nenhum produto encontrado nos anúncios ativos da Carbwel.</p>
-              <p className="text-xs text-neutral-400 mt-2 italic">Dica: Confirme se os anúncios do ID 72983036 estão como "Ativos" no Mercado Livre.</p>
+              <p className="text-xs text-neutral-400 mt-2 italic">Dica: Confirme as permissões de escrita no painel do Mercado Livre.</p>
             </div>
           )}
         </section>
