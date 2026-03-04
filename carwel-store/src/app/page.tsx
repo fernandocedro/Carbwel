@@ -5,21 +5,29 @@ import HeroCarousel from "./components/HeroCarousel";
 
 // Função para buscar os produtos reais da Carbwel no Mercado Livre
 async function getCarbwelProducts() {
-  const ACCESS_TOKEN = "APP_USR-567742962988102-030411-9cfb370bd645c72b8745399201d11a9f-72983036";
+  // SEU NOVO TOKEN ATUALIZADO
+  const ACCESS_TOKEN = "APP_USR-567742962988102-030411-c7f404e601f91d7c851a6462c47e53d6-72983036";
   const SELLER_ID = "72983036";
 
   try {
     const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}`, {
       headers: {
-        'Authorization': `Bearer ${ACCESS_TOKEN}`
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
       },
-      next: { revalidate: 3600 } // Atualiza os dados a cada hora
+      cache: 'no-store' 
     });
 
     const data = await res.json();
+
+    if (data.error) {
+      console.error("Erro na API:", data.message);
+      return [];
+    }
+
     return data.results || [];
   } catch (error) {
-    console.error("Erro ao carregar produtos:", error);
+    console.error("Erro de conexão:", error);
     return [];
   }
 }
