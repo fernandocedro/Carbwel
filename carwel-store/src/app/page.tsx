@@ -3,18 +3,9 @@ import Header from "./components/Header";
 import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
-// Interface para garantir que a build da Vercel não falhe
-interface MLProduct {
-  id: string;
-  title: string;
-  price: number;
-  thumbnail: string;
-  permalink: string;
-}
-
-async function getCarbwelProducts(): Promise<MLProduct[]> {
-  // Use exatamente estas credenciais que já validamos
-  const ACCESS_TOKEN = "APP_USR-567742962988102-030412-4bfc89744966d31c36532932c008e8fe-72983036";
+async function getCarbwelProducts() {
+  // SEU TOKEN ATUALIZADO E DESTRAVADO
+  const ACCESS_TOKEN = "APP_USR-567742962988102-030412-7e5bc834278e085c9431f391f896ff35-72983036";
   const SELLER_ID = "72983036";
 
   try {
@@ -22,15 +13,13 @@ async function getCarbwelProducts(): Promise<MLProduct[]> {
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`
       },
-      cache: 'no-store' // Isso força a busca de dados novos a cada acesso
+      cache: 'no-store' 
     });
-
-    if (!res.ok) return [];
 
     const data = await res.json();
     return data.results || [];
   } catch (error) {
-    console.error("Erro na busca de produtos:", error);
+    console.error("Erro na busca:", error);
     return [];
   }
 }
@@ -50,7 +39,7 @@ export default async function Home() {
           <h2 className="text-2xl font-bold mb-6 text-neutral-800">Destaques da Carbwel</h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
+            {products.map((product: any) => (
               <div key={product.id} className="group border p-4 rounded-lg hover:shadow-xl transition-all bg-white flex flex-col justify-between">
                 <div>
                   <div className="aspect-square relative mb-4 overflow-hidden rounded-md bg-gray-50">
@@ -82,8 +71,8 @@ export default async function Home() {
 
           {products.length === 0 && (
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
-              <p className="text-neutral-500 font-medium">Nenhum produto encontrado nos anúncios ativos da Carbwel.</p>
-              <p className="text-xs text-neutral-400 mt-2 italic">Dica: Confirme as permissões de escrita no painel do Mercado Livre.</p>
+              <p className="text-neutral-500 font-medium">Carregando anúncios ativos da Carbwel...</p>
+              <p className="text-xs text-neutral-400 mt-2 italic">Se esta mensagem persistir, verifique o status do deploy na Vercel.</p>
             </div>
           )}
         </section>
