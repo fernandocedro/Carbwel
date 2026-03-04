@@ -6,12 +6,13 @@ import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
 async function getCarbwelProducts() {
-  // SEU TOKEN ATUALIZADO (Validado às 14:00 de hoje)
-  const ACCESS_TOKEN = "APP_USR-567742962988102-030412-7e5bc834278e085c9431f391f896ff35-72983036";
+  // SEU NOVO TOKEN GERADO AGORA
+  const ACCESS_TOKEN = "APP_USR-567742962988102-030413-e709faa18905b4daa0d14dfacbab8e3a-72983036";
   const SELLER_ID = "72983036";
 
   try {
-    const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}`, {
+    // Adicionamos &v=1 para garantir que a Vercel busque dados novos com o novo token
+    const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&v=1`, {
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`
       },
@@ -19,15 +20,9 @@ async function getCarbwelProducts() {
     });
 
     const data = await res.json();
-    
-    if (data.error) {
-      console.error("Erro API ML:", data.message);
-      return [];
-    }
-
     return data.results || [];
   } catch (error) {
-    console.error("Erro de conexão:", error);
+    console.error("Erro na busca:", error);
     return [];
   }
 }
@@ -79,8 +74,8 @@ export default async function Home() {
 
           {products.length === 0 && (
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
-              <p className="text-neutral-500 font-medium">Nenhum produto encontrado.</p>
-              <p className="text-xs text-neutral-400 mt-2 italic">Dica: Verifique se os anúncios no Mercado Livre estão "Ativos".</p>
+              <p className="text-neutral-500 font-medium">Sincronizando produtos da Carbwel...</p>
+              <p className="text-xs text-neutral-400 mt-2 italic">Aguarde alguns instantes para o Mercado Livre liberar a lista.</p>
             </div>
           )}
         </section>
