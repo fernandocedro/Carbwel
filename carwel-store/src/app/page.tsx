@@ -3,9 +3,9 @@ import Header from "./components/Header";
 import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
-// Função única e corrigida para buscar os produtos reais
 async function getCarbwelProducts() {
-  const ACCESS_TOKEN = "APP_USR-567742962988102-030411-c7f404e601f91d7c851a6462c47e53d6-72983036";
+  // SEU TOKEN MAIS RECENTE
+  const ACCESS_TOKEN = "APP_USR-567742962988102-030412-4bfc89744966d31c36532932c008e8fe-72983036";
   const SELLER_ID = "72983036";
 
   try {
@@ -19,7 +19,7 @@ async function getCarbwelProducts() {
     const data = await res.json();
     
     if (data.error) {
-      console.error("Erro na API do Mercado Livre:", data.message);
+      console.error("Erro da API do Mercado Livre:", data.message);
       return [];
     }
 
@@ -44,7 +44,6 @@ export default async function Home() {
         <section className="mx-auto max-w-7xl px-4 py-10">
           <h2 className="text-2xl font-bold mb-6 text-neutral-800">Destaques da Carbwel</h2>
           
-          {/* Vitrine de Produtos Reais */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products.map((product: any) => (
               <div key={product.id} className="group border p-4 rounded-lg hover:shadow-xl transition-all bg-white flex flex-col justify-between">
@@ -76,11 +75,10 @@ export default async function Home() {
             ))}
           </div>
 
-          {/* Exibe mensagem apenas se a lista vier realmente vazia */}
           {products.length === 0 && (
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
-              <p className="text-neutral-500">Nenhum produto encontrado nos anúncios ativos da Carbwel.</p>
-              <p className="text-xs text-neutral-400 mt-2">Verifique se há anúncios ativos para o ID {72983036}</p>
+              <p className="text-neutral-500 font-medium">Nenhum produto encontrado nos anúncios ativos da Carbwel.</p>
+              <p className="text-xs text-neutral-400 mt-2 italic">Dica: Verifique se os anúncios no Mercado Livre estão com status "Ativo".</p>
             </div>
           )}
         </section>
