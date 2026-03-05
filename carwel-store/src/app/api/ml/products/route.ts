@@ -1,41 +1,40 @@
-import { NextResponse } from "next/server";
-import { getValidTokens, mlFetch } from "../../../../lib/mlClient";
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 export async function GET() {
-  const tokens = await getValidTokens();
-  
-  // Verifica se o token existe e é válido
-  if (!tokens?.access_token || !tokens?.user_id) {
-    return NextResponse.json(
-      { ok: false, error: "Não conectado. Faça login em /api/ml/login" },
-      { status: 401 }
-    );
+  const cookieStore = cookies();
+  const accessToken = cookieStore.get('ml_access_token')?.value;
+  const userId = "72983036"; // Seu User ID da Carbwel
+
+  if (!accessToken) {
+    return NextResponse.json({ ok: false, error: 'Não conectado' }, { status: 401 });
   }
 
   try {
-    // 1. Mudamos a rota para garantir que a busca seja feita no Seller ID correto
-    // 2. Adicionamos o parâmetro 'status=active' para pegar seus 5.582 anúncios ativos
-    const data = await mlFetch(`/sites/MLB/search?seller_id=${tokens.user_id}&status=active`);
-    
-    // Se a API retornar erro de permissão interno
-    if (data.error === "forbidden" || data.status === 403) {
-       return NextResponse.json(
-        { ok: false, error: "Mercado Livre ainda processando certificação. Tente novamente em instantes.", details: data },
-        { status: 403 }
-      );
+    // Mudamos para buscar direto os itens do SEU usuário
+    const response = await fetch(
+      `https://api.mercadolibre.com/users/${userId}/items/search?access_token=${accessToken}&limit=50`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json({ 
+        ok: false, 
+        error: 'Mercado Livre ainda processando acesso privado.',
+        details: data 
+      }, { status: response.status });
     }
 
-    return NextResponse.json({ 
-      ok: true, 
-      user_id: tokens.user_id, 
-      total_items: data.paging?.total || 0,
-      products: data.results || [] 
-    });
-
-  } catch (error: any) {
-    return NextResponse.json(
-      { ok: false, error: "Erro ao conectar com a API do Mercado Livre", message: error.message },
-      { status: 500 }
+    // O ML retorna uma lista de IDs em /users/me/items. 
+    // Para simplificar agora, vamos manter a estrutura de busca que você já tinha:
+    const searchResponse = await fetch(
+      `https://api.mercadolibre.com/sites/MLB/search?seller_id=${userId}`
     );
+    const searchData = await searchResponse.json();
+
+    return NextResponse.json({ ok: true, results: searchData.results });
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: 'Erro de conexão' }, { status: 500 });
   }
 }
