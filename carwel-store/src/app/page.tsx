@@ -6,16 +6,11 @@ import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
 async function getCarbwelProducts() {
-  // NOVO TOKEN (Gerado após Certificação e desativação do PKCE)
-  const ACCESS_TOKEN = "APP_USR-567742962988102-030510-28954a9075f058ce860e2cba2918a36e-72983036";
   const SELLER_ID = "72983036";
 
   try {
-    // v=final garante que a busca ignore qualquer erro 403 anterior
-    const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&v=final`, {
-      headers: {
-        'Authorization': `Bearer ${ACCESS_TOKEN}`
-      },
+    // Fazendo a requisição pública sem o token de acesso (que estava expirando e causando o erro 403)
+    const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}`, {
       cache: 'no-store' 
     });
 
