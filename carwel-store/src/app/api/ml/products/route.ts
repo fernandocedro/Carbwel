@@ -2,17 +2,25 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function GET() {
-  // O Next.js exige o await para ler os cookies em versões recentes
-  const cookieStore = await cookies(); 
-  const accessToken = cookieStore.get('ml_access_token')?.value;
-  const userId = "72983036"; 
+  const cookieStore = await cookies();
+  
+  // 1. Pegamos o cookie com o nome correto: 'ml_tokens'
+  const mlTokensCookie = cookieStore.get('ml_tokens')?.value;
 
-  if (!accessToken) {
+  if (!mlTokensCookie) {
     return NextResponse.json({ ok: false, error: 'Não conectado' }, { status: 401 });
   }
 
   try {
-    // Vamos direto na busca por seller_id, que é mais estável
+    // 2. Como você salvou o JSON inteiro, precisamos extrair o access_token
+    const tokens = JSON.parse(mlTokensCookie);
+    const accessToken = tokens.access_token;
+    const userId = "72983036"; 
+
+    if (!accessToken) {
+        return NextResponse.json({ ok: false, error: 'Token não encontrado no cookie' }, { status: 401 });
+    }
+
     const response = await fetch(
       `https://api.mercadolibre.com/sites/MLB/search?seller_id=${userId}`,
       {
@@ -34,6 +42,6 @@ export async function GET() {
 
     return NextResponse.json({ ok: true, results: data.results });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: 'Erro de conexão' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'Erro ao processar tokens ou conexão' }, { status: 500 });
   }
 }
