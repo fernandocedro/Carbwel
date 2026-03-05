@@ -1,44 +1,42 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const userId = "72983036";
-  
-  // Voltando para a forma simples: apenas um Token Direto
+  const userId = "72983036"; // Seu Seller ID da Carbwel
   const accessToken = process.env.ML_ACCESS_TOKEN; 
 
   if (!accessToken) {
     return NextResponse.json({ 
       ok: false, 
-      error: 'Token não encontrado. Adicione ML_ACCESS_TOKEN na Vercel.' 
+      error: 'Token não configurado na Vercel. Adicione ML_ACCESS_TOKEN.' 
     }, { status: 500 });
   }
 
   try {
-    // Busca direta dos produtos sem tentar renovar nada
-    const mlResponse = await fetch(
+    // Chamada direta para buscar seus 5.582 anúncios
+    const response = await fetch(
       `https://api.mercadolibre.com/sites/MLB/search?seller_id=${userId}`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'User-Agent': 'Carbwel-App/1.0'
+          'Content-Type': 'application/json'
         },
         cache: 'no-store'
       }
     );
 
-    const data = await mlResponse.json();
+    const data = await response.json();
 
-    if (!mlResponse.ok) {
+    if (!response.ok) {
       return NextResponse.json({ 
         ok: false, 
-        error: 'Erro na API do Mercado Livre', 
+        error: 'Erro de permissão no Mercado Livre (403)', 
         details: data 
-      }, { status: mlResponse.status });
+      }, { status: response.status });
     }
 
     return NextResponse.json({ ok: true, results: data.results });
 
   } catch (error) {
-    return NextResponse.json({ ok: false, error: 'Erro interno no servidor' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'Falha na conexão com o servidor' }, { status: 500 });
   }
 }
