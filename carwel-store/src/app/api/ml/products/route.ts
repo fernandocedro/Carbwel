@@ -2,18 +2,24 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function GET() {
-  const cookieStore = cookies();
+  // O Next.js exige o await para ler os cookies em versões recentes
+  const cookieStore = await cookies(); 
   const accessToken = cookieStore.get('ml_access_token')?.value;
-  const userId = "72983036"; // Seu User ID da Carbwel
+  const userId = "72983036"; 
 
   if (!accessToken) {
     return NextResponse.json({ ok: false, error: 'Não conectado' }, { status: 401 });
   }
 
   try {
-    // Mudamos para buscar direto os itens do SEU usuário
+    // Vamos direto na busca por seller_id, que é mais estável
     const response = await fetch(
-      `https://api.mercadolibre.com/users/${userId}/items/search?access_token=${accessToken}&limit=50`
+      `https://api.mercadolibre.com/sites/MLB/search?seller_id=${userId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
     );
 
     const data = await response.json();
@@ -21,19 +27,12 @@ export async function GET() {
     if (!response.ok) {
       return NextResponse.json({ 
         ok: false, 
-        error: 'Mercado Livre ainda processando acesso privado.',
+        error: 'Mercado Livre recusou o acesso.',
         details: data 
       }, { status: response.status });
     }
 
-    // O ML retorna uma lista de IDs em /users/me/items. 
-    // Para simplificar agora, vamos manter a estrutura de busca que você já tinha:
-    const searchResponse = await fetch(
-      `https://api.mercadolibre.com/sites/MLB/search?seller_id=${userId}`
-    );
-    const searchData = await searchResponse.json();
-
-    return NextResponse.json({ ok: true, results: searchData.results });
+    return NextResponse.json({ ok: true, results: data.results });
   } catch (error) {
     return NextResponse.json({ ok: false, error: 'Erro de conexão' }, { status: 500 });
   }
