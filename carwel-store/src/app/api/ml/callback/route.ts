@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   try {
     // Trocando o código temporário pelo Token Real
-    const response = await fetch('https://api.mercadolibre.com/oauth/token', {
+    const resML = await fetch('https://api.mercadolibre.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -22,16 +22,26 @@ export async function GET(request: Request) {
       }),
     });
 
-    const data = await response.json();
+    const data = await resML.json();
 
     if (data.access_token) {
-      // Por enquanto, vamos exibir o token na tela para você ver que funcionou
-      // Em produção, salvaríamos isso num banco de dados
-      return NextResponse.json({ 
+      // Criamos a resposta de sucesso
+      const response = NextResponse.json({ 
         message: "Conectado com sucesso!", 
         token: data.access_token,
         expires: data.expires_in 
       });
+
+      // SALVANDO O TOKEN NO NAVEGADOR (Cookie)
+      // Isso impede que o login "suma" quando a Vercel reiniciar
+      response.cookies.set('ml_tokens', JSON.stringify(data), {
+        httpOnly: true, // Mais segurança para sua conta Certificada
+        secure: true,   // Apenas via HTTPS (Vercel)
+        maxAge: 21600,  // Dura 6 horas (mesmo tempo do token do ML)
+        path: '/',      // Disponível em todo o site Carbwel
+      });
+
+      return response;
     }
 
     return NextResponse.json(data);
