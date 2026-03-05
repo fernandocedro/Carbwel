@@ -6,23 +6,28 @@ import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
 async function getCarbwelProducts() {
-  // SEU NOVO TOKEN GERADO AGORA
-  const ACCESS_TOKEN = "APP_USR-567742962988102-030413-e709faa18905b4daa0d14dfacbab8e3a-72983036";
+  // TOKEN ATUALIZADO (Gerado após validação fiscal da CARBWEL AUTO PECAS LTDA)
+  const ACCESS_TOKEN = "APP_USR-567742962988102-030510-74d26f772f17ce64a28ffd48b696ef0f-72983036";
   const SELLER_ID = "72983036";
 
   try {
-    // Adicionamos &v=1 para garantir que a Vercel busque dados novos com o novo token
-    const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&v=1`, {
+    // Usamos v=2 para forçar a limpeza de qualquer erro 403 anterior no cache da Vercel
+    const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&v=2`, {
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`
       },
       cache: 'no-store' 
     });
 
+    if (!res.ok) {
+      console.error(`Erro na API do Mercado Livre: ${res.status}`);
+      return [];
+    }
+
     const data = await res.json();
     return data.results || [];
   } catch (error) {
-    console.error("Erro na busca:", error);
+    console.error("Erro crítico na conexão:", error);
     return [];
   }
 }
@@ -74,8 +79,8 @@ export default async function Home() {
 
           {products.length === 0 && (
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
-              <p className="text-neutral-500 font-medium">Sincronizando produtos da Carbwel...</p>
-              <p className="text-xs text-neutral-400 mt-2 italic">Aguarde alguns instantes para o Mercado Livre liberar a lista.</p>
+              <p className="text-neutral-500 font-medium">Sincronizando estoque da Carbwel...</p>
+              <p className="text-xs text-neutral-400 mt-2 italic">Aguardando liberação dos 5.582 anúncios ativos pelo Mercado Livre.</p>
             </div>
           )}
         </section>
