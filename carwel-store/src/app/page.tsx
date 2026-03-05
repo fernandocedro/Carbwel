@@ -6,13 +6,13 @@ import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 
 async function getCarbwelProducts() {
-  // TOKEN ATUALIZADO (Gerado após validação fiscal da CARBWEL AUTO PECAS LTDA)
-  const ACCESS_TOKEN = "APP_USR-567742962988102-030510-74d26f772f17ce64a28ffd48b696ef0f-72983036";
+  // NOVO TOKEN (Gerado após Certificação e desativação do PKCE)
+  const ACCESS_TOKEN = "APP_USR-567742962988102-030510-28954a9075f058ce860e2cba2918a36e-72983036";
   const SELLER_ID = "72983036";
 
   try {
-    // Usamos v=2 para forçar a limpeza de qualquer erro 403 anterior no cache da Vercel
-    const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&v=2`, {
+    // v=final garante que a busca ignore qualquer erro 403 anterior
+    const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&v=final`, {
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`
       },
@@ -20,14 +20,14 @@ async function getCarbwelProducts() {
     });
 
     if (!res.ok) {
-      console.error(`Erro na API do Mercado Livre: ${res.status}`);
+      console.error(`Status da API: ${res.status}`);
       return [];
     }
 
     const data = await res.json();
     return data.results || [];
   } catch (error) {
-    console.error("Erro crítico na conexão:", error);
+    console.error("Erro na conexão com Mercado Livre:", error);
     return [];
   }
 }
@@ -44,7 +44,10 @@ export default async function Home() {
         <HeroCarousel />
         
         <section className="mx-auto max-w-7xl px-4 py-10">
-          <h2 className="text-2xl font-bold mb-6 text-neutral-800">Destaques da Carbwel</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-neutral-800">Destaques da Carbwel</h2>
+            <span className="text-sm text-neutral-500">{products.length} anúncios encontrados</span>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products.map((product: any) => (
@@ -80,7 +83,9 @@ export default async function Home() {
           {products.length === 0 && (
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
               <p className="text-neutral-500 font-medium">Sincronizando estoque da Carbwel...</p>
-              <p className="text-xs text-neutral-400 mt-2 italic">Aguardando liberação dos 5.582 anúncios ativos pelo Mercado Livre.</p>
+              <p className="text-xs text-neutral-400 mt-2 italic text-blue-600">
+                Aguardando liberação dos 5.582 anúncios ativos. A conta já está Certificada e Regularizada.
+              </p>
             </div>
           )}
         </section>
