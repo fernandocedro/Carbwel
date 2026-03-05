@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   const userId = "72983036";
   
-  // Pegando as chaves das Variáveis de Ambiente da Vercel
-  const clientId = process.env.ML_CLIENT_ID;
+  // Pegando as chaves das Variáveis de Ambiente exatamente como estão no seu print da Vercel
+  const clientId = process.env.ML_APP_ID;         // Ajustado para bater com seu print
   const clientSecret = process.env.ML_CLIENT_SECRET;
-  const currentRefreshToken = process.env.ML_REFRESH_TOKEN; // Você precisa cadastrar isso na Vercel
+  const currentRefreshToken = process.env.ML_REFRESH_TOKEN; // Certifique-se de ter criado esta chave na Vercel
 
   try {
     // 1. SOLICITAR UM NOVO ACCESS TOKEN AO MERCADO LIVRE
@@ -30,16 +30,13 @@ export async function GET() {
       console.error("Erro ao renovar token:", tokenData);
       return NextResponse.json({ 
         ok: false, 
-        error: 'Falha ao renovar credenciais no Mercado Livre', 
+        error: 'Falha ao renovar credenciais. Verifique o ML_REFRESH_TOKEN na Vercel.', 
         details: tokenData 
       }, { status: 401 });
     }
 
     const newAccessToken = tokenData.access_token;
     
-    // IMPORTANTE: O Mercado Livre também te devolve um NOVO refresh_token aqui (tokenData.refresh_token). 
-    // Em um cenário ideal, você deve salvar esse novo refresh_token em um Banco de Dados.
-
     // 2. BUSCAR OS PRODUTOS COM O NOVO TOKEN VÁLIDO
     const mlResponse = await fetch(
       `https://api.mercadolibre.com/sites/MLB/search?seller_id=${userId}`,
@@ -57,7 +54,7 @@ export async function GET() {
     if (!mlResponse.ok) {
       return NextResponse.json({ 
         ok: false, 
-        error: 'Mercado Livre recusou a busca de produtos.', 
+        error: 'Mercado Livre recusou a busca de produtos (Erro 403 ou similar).', 
         details: data 
       }, { status: mlResponse.status });
     }
