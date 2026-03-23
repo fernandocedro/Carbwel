@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 
 function useIsDesktop(breakpoint = 768) {
   const [isDesktop, setIsDesktop] = useState(false);
-
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${breakpoint + 1}px)`);
     const update = () => setIsDesktop(mq.matches);
@@ -16,7 +15,6 @@ function useIsDesktop(breakpoint = 768) {
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, [breakpoint]);
-
   return isDesktop;
 }
 
@@ -29,8 +27,7 @@ export default function CategoryNav() {
 
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
-      if (!rootRef.current) return;
-      if (!rootRef.current.contains(e.target as Node)) {
+      if (!rootRef.current || !rootRef.current.contains(e.target as Node)) {
         setOpenIndex(null);
         setAllOpen(false);
       }
@@ -46,10 +43,23 @@ export default function CategoryNav() {
     setAllOpen(false);
   };
 
-  // Função para limpar o texto e buscar (ex: remove "/" de Suspensão/Direção)
-  const handleMainCategoryClick = (label: string) => {
-    const searchTerm = label.replace("/", " ");
-    router.push(`/?q=${encodeURIComponent(searchTerm)}`);
+  /**
+   * FUNÇÃO CRUCIAL: Limpa o nome da categoria para a API do ML.
+   * Ex: "Suspensão/Direção" -> "Suspensão Direção"
+   * Ex: "Bobinas de Ignição" -> "Bobina Ignição"
+   */
+  const formatQuery = (label: string) => {
+    return label
+      .replace("/", " ")       // Remove barras
+      .replace(" de ", " ")    // Remove preposições comuns
+      .replace(" para ", " ")  
+      .replace("s ", " ")      // Tenta singularizar termos simples (ajuste conforme necessário)
+      .trim();
+  };
+
+  const handleSearch = (label: string) => {
+    const q = formatQuery(label);
+    router.push(`/?q=${encodeURIComponent(q)}`);
     closeMenus();
   };
 
@@ -57,7 +67,6 @@ export default function CategoryNav() {
     <div ref={rootRef} className="border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
         
-        {/* Menu principal */}
         <nav className="hidden items-center gap-8 md:flex">
           {items.map((it, idx) => (
             <div
@@ -70,25 +79,20 @@ export default function CategoryNav() {
                 type="button"
                 className="flex items-center gap-1 text-sm font-semibold text-slate-800 hover:text-red-600 transition-colors"
                 onClick={() => {
-                  if (isDesktop) {
-                    handleMainCategoryClick(it.label);
-                  } else {
-                    setOpenIndex(openIndex === idx ? null : idx);
-                  }
+                  if (isDesktop) handleSearch(it.label);
+                  else setOpenIndex(openIndex === idx ? null : idx);
                 }}
               >
                 {it.label}
                 <ChevronDown className="h-4 w-4 opacity-70" />
               </button>
 
-              {/* Dropdown de Subcategorias */}
               {openIndex === idx && it.children?.length ? (
                 <div className="absolute left-0 top-full z-50 mt-3 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg animate-in fade-in slide-in-from-top-1">
                   {it.children.map((c) => (
                     <Link
                       key={c.label}
-                      // Substitui "/" por espaço para a busca do ML funcionar melhor
-                      href={`/?q=${encodeURIComponent(c.label.replace("/", " "))}`}
+                      href={`/?q=${encodeURIComponent(formatQuery(c.label))}`}
                       onClick={closeMenus}
                       className="block rounded-xl px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-50 hover:text-blue-600 transition-colors"
                     >
@@ -101,7 +105,6 @@ export default function CategoryNav() {
           ))}
         </nav>
 
-        {/* Botão "Todas as categorias" */}
         <button
           type="button"
           className="ml-auto flex items-center gap-2 text-sm font-extrabold tracking-wide text-red-600 hover:opacity-80 transition-opacity"
@@ -112,15 +115,14 @@ export default function CategoryNav() {
         </button>
       </div>
 
-      {/* Grid Expandido */}
-      {allOpen ? (
+      {allOpen && (
         <div className="mx-auto max-w-7xl px-4 pb-4 animate-in fade-in zoom-in-95">
           <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-xl">
             <div className="grid gap-4 md:grid-cols-4">
               {items.map((it) => (
                 <div key={it.label} className="rounded-2xl bg-neutral-50 p-4">
                   <button 
-                    onClick={() => handleMainCategoryClick(it.label)}
+                    onClick={() => handleSearch(it.label)}
                     className="mb-3 text-sm font-extrabold text-slate-900 hover:text-red-600 uppercase text-left w-full"
                   >
                     {it.label}
@@ -129,7 +131,7 @@ export default function CategoryNav() {
                     {it.children?.map((c) => (
                       <Link
                         key={c.label}
-                        href={`/?q=${encodeURIComponent(c.label.replace("/", " "))}`}
+                        href={`/?q=${encodeURIComponent(formatQuery(c.label))}`}
                         onClick={closeMenus}
                         className="block rounded-lg px-2 py-1 text-sm text-neutral-600 hover:bg-white hover:text-blue-600 transition-all"
                       >
@@ -142,7 +144,7 @@ export default function CategoryNav() {
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
