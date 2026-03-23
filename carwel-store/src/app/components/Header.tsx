@@ -14,7 +14,7 @@ export default function Header() {
                Basta colocar "/" seguido do nome do arquivo que está lá dentro.
             */}
             <img 
-              src="/logo.webp" 
+              src="/images/logo.webp" 
               alt="Logo Carbwel" 
               className="h-8 md:h-10 w-auto object-contain transition-transform group-hover:scale-105"
             />
