@@ -8,7 +8,7 @@ import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
 import { Suspense } from "react";
 
-// 1. Função de busca ajustada para maior precisão
+// Função de busca com foco em resultados parciais
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   const SELLER_ID = "72983036";
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
@@ -17,9 +17,9 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
   const offset = (currentPage - 1) * limit;
 
   try {
-    // ALTERAÇÃO CRUCIAL: Usamos o endpoint /sites/MLB/search filtrando pelo seu SELLER_ID
-    // Isso permite que a busca por texto (q) funcione como no site do Mercado Livre
-    const url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&q=${encodeURIComponent(q)}&offset=${offset}&limit=${limit}&status=active`;
+    // Usamos o endpoint de busca do site MLB filtrando pelo seu ID de vendedor.
+    // O parâmetro 'q' aqui aceita buscas aproximadas nativamente pelo motor do ML.
+    const url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&q=${encodeURIComponent(q)}&offset=${offset}&limit=${limit}`;
     
     const res = await fetch(url, {
       cache: 'no-store',
@@ -28,7 +28,6 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
 
     const searchData = await res.json();
     
-    // No endpoint de sites/MLB/search, os produtos já vêm completos em .results
     const products = searchData.results || [];
     const totalItems = searchData.paging?.total || 0;
 
@@ -39,7 +38,8 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
   }
 }
 
-export default async function Home({ searchParams }: { searchParams: any }) {
+export default async function Home({ searchParams }: { searchParams: Promise<any> }) {
+  // Em versões recentes do Next.js, searchParams deve ser aguardado (awaited)
   const params = await searchParams; 
   const query = params?.q || "";
   const pageStr = params?.page || "1";
@@ -82,7 +82,7 @@ export default async function Home({ searchParams }: { searchParams: any }) {
             
             {products.length === 0 ? (
               <div className="text-center py-20 border-2 border-dashed rounded-3xl">
-                <p className="text-neutral-400 font-medium">Nenhum produto encontrado para esta categoria.</p>
+                <p className="text-neutral-400 font-medium">Nenhum produto encontrado.</p>
                 <Link href="/" className="text-blue-600 font-bold mt-2 inline-block">Ver todos os produtos</Link>
               </div>
             ) : (
