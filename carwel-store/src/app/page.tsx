@@ -8,6 +8,7 @@ import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
 import { Suspense } from "react";
 
+// 1. Função de busca com fallback para evitar que a tela fique branca
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   const SELLER_ID = "72983036";
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
@@ -16,16 +17,18 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
   const offset = (currentPage - 1) * limit;
 
   try {
-    // 1. URL base: sempre busca os produtos do seu vendedor
+    // Se não houver Token, retornamos vazio para não quebrar o build
+    if (!ACCESS_TOKEN) {
+      console.error("TOKEN ML NÃO ENCONTRADO");
+      return { products: [], total: 0 };
+    }
+
     let url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&offset=${offset}&limit=${limit}`;
     
-    // 2. Só injetamos o termo 'q' se ele não for vazio. 
-    // Isso garante que na primeira página (sem busca) ele mostre TUDO.
-    const searchTerm = q.trim();
-    if (searchTerm) {
-      url += `&q=${encodeURIComponent(searchTerm)}`;
+    if (q && q.trim() !== "") {
+      url += `&q=${encodeURIComponent(q.trim())}`;
     }
-    
+
     const res = await fetch(url, {
       method: 'GET',
       cache: 'no-store',
@@ -35,23 +38,24 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
       }
     });
 
-    if (!res.ok) throw new Error(`Erro API: ${res.status}`);
-
     const searchData = await res.json();
     return { 
       products: searchData.results || [], 
       total: searchData.paging?.total || 0 
     };
   } catch (error) {
-    console.error("Erro na busca:", error);
     return { products: [], total: 0 };
   }
 }
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
-  const params = await searchParams; 
-  const query = params?.q || "";
-  const pageStr = params?.page || "1";
+// 2. Componente Home ajustado para os padrões do Next.js 15
+export default async function Home(props: { 
+  searchParams: Promise<{ q?: string; page?: string }> 
+}) {
+  // O segredo do deploy está neste await aqui embaixo:
+  const searchParams = await props.searchParams;
+  const query = searchParams?.q || "";
+  const pageStr = searchParams?.page || "1";
   
   const { products, total } = await getCarbwelProducts(query, pageStr);
   
@@ -64,16 +68,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
       <Header />
       <CategoryNav />
       
-      {/* Carrossel: Só aparece na Home (sem query) e na página 1 */}
       {!query && currentPage === 1 && <HeroCarousel />}
       
-      {/* O Suspense com 'key' garante que o Next.js recarregue os dados ao mudar o filtro */}
       <Suspense key={`${query}-${pageStr}`} fallback={<LoadingState />}>
         <main className="mx-auto max-w-7xl px-4 py-10">
           <div className="flex justify-between items-end mb-8 border-b pb-4">
             <div>
               <h2 className="text-2xl font-bold text-neutral-800 uppercase">
-                {query ? `Categoria: ${query}` : "Peças em Destaque"}
+                {query ? `Busca: ${query}` : "Peças em Destaque"}
               </h2>
               <p className="text-blue-600 font-bold">
                 {total.toLocaleString('pt-BR')} anúncios encontrados
@@ -104,4 +106,4 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
   );
 }
 
-// Componentes auxiliares (LoadingState, EmptyState, ProductCard, Pagination) permanecem os mesmos...
+// Mantenha suas funções auxiliares (LoadingState, EmptyState, ProductCard, Pagination) abaixo disso.
