@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const preferredRegion = 'sao1';
+
 import TopBar from "./components/TopBar";
 import Header from "./components/Header";
 import CategoryNav from "./components/CategoryNav";
@@ -7,28 +8,45 @@ import HeroCarousel from "./components/HeroCarousel";
 
 async function getCarbwelProducts() {
   const SELLER_ID = "72983036";
-  // Puxa o token que você configurou nas variáveis de ambiente da Vercel
-  const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN; 
+  const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
 
   try {
-    // Agora enviamos o cabeçalho de autorização para evitar o erro 403
-    const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}`, {
+    // 1. Buscamos os IDs dos anúncios ativos (Rota privada que evita o erro 403)
+    const res = await fetch(`https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active`, {
       cache: 'no-store',
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`,
-        'User-Agent': 'CarbwelSite/1.0' // Identifica seu site para o Mercado Livre
+        'User-Agent': 'CarbwelSite/1.0'
       }
     });
 
     if (!res.ok) {
-      // Se ainda der erro, o log na Vercel vai nos dizer exatamente o porquê
       const errorDetail = await res.json().catch(() => ({}));
-      console.error(`Status da API: ${res.status}`, errorDetail);
+      console.error(`Erro na Home: ${res.status}`, errorDetail);
       return [];
     }
 
-    const data = await res.json();
-    return data.results || [];
+    const searchData = await res.json();
+    const itemIds = searchData.results || [];
+
+    if (itemIds.length === 0) return [];
+
+    // 2. Buscamos os detalhes das primeiras 20 peças para exibir com foto e preço
+    const idsString = itemIds.slice(0, 20).join(',');
+    const itemsRes = await fetch(`https://api.mercadolibre.com/items?ids=${idsString}`, {
+       headers: { 
+         'Authorization': `Bearer ${ACCESS_TOKEN}`,
+         'User-Agent': 'CarbwelSite/1.0'
+       }
+    });
+
+    const itemsData = await itemsRes.json();
+    
+    // Retornamos apenas os itens que o Mercado Livre respondeu com sucesso
+    return itemsData
+      .filter((i: any) => i.code === 200)
+      .map((i: any) => i.body);
+
   } catch (error) {
     console.error("Erro na conexão com Mercado Livre:", error);
     return [];
@@ -53,12 +71,12 @@ export default async function Home() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
+            {products.map((product: any) => (
               <div key={product.id} className="group border p-4 rounded-lg hover:shadow-xl transition-all bg-white flex flex-col justify-between">
                 <div>
                   <div className="aspect-square relative mb-4 overflow-hidden rounded-md bg-gray-50">
                     <img 
-                      src={product.thumbnail.replace("-I.jpg", "-O.jpg")} 
+                      src={product.thumbnail?.replace("-I.jpg", "-O.jpg")} 
                       alt={product.title}
                       className="object-contain w-full h-full group-hover:scale-105 transition-transform"
                     />
@@ -87,8 +105,7 @@ export default async function Home() {
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
               <p className="text-neutral-500 font-medium">Sincronizando estoque da Carbwel...</p>
               <p className="text-xs text-neutral-400 mt-2 italic text-blue-600">
-                A conta já possui permissões {products.length === 0 ? "em validação" : "ativas"}. 
-                Verifique se o ML_ACCESS_TOKEN na Vercel é o mais recente.
+                Acesse /api/ml/login para validar o token se os produtos não aparecerem.
               </p>
             </div>
           )}
