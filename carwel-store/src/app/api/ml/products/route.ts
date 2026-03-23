@@ -12,7 +12,6 @@ export async function GET() {
   }
 
   try {
-    // Chamada direta para buscar seus 5.582 anúncios
     const response = await fetch(
       `https://api.mercadolibre.com/sites/MLB/search?seller_id=${userId}`,
       {
@@ -37,6 +36,10 @@ export async function GET() {
     return NextResponse.json({ ok: true, results: data.results });
 
   } catch (error) {
-    return NextResponse.json({ ok: false, error: 'Falha na conexão com o servidor' }, { status: 500 });
+    return NextResponse.json({ 
+      ok: false, 
+      error: 'Falha na conexão interna da Vercel',
+      message: error instanceof Error ? error.message : 'Erro desconhecido'
+    }, { status: 500 });
   }
 }
