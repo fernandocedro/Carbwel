@@ -8,7 +8,7 @@ import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
 import { Suspense } from "react";
 
-// 1. Função de busca (Mantida a lógica que já funciona)
+// 1. Função de busca (Lógica mantida, pois já funciona)
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   const SELLER_ID = "72983036";
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
@@ -45,7 +45,7 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
 
 // 2. Componente Principal
 export default async function Home({ searchParams }: { searchParams: any }) {
-  // O segredo está em aguardar o searchParams explicitamente
+  // Aguardamos os parâmetros da URL
   const params = await searchParams; 
   const query = params?.q || "";
   const pageStr = params?.page || "1";
@@ -57,15 +57,18 @@ export default async function Home({ searchParams }: { searchParams: any }) {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* --- PARTE SUPERIOR FIXA (EXTERNAMENTE AO SUSPENSE) --- */}
       <TopBar />
       <Header />
       <CategoryNav />
       
-      {/* O Suspense com a KEY força o Next.js a renderizar do zero ao mudar a URL */}
-      <Suspense key={`${query}-${pageStr}`} fallback={<div className="text-center py-20 font-bold text-blue-600">Carregando estoque...</div>}>
+      {/* O Banner agora fica AQUI, fixo na topo e fora do Suspense */}
+      {!query && currentPage === 1 && <HeroCarousel />}
+      {/* ----------------------------------------------------- */}
+      
+      {/* A Key no Suspense força a atualização APENAS da lista de produtos */}
+      <Suspense key={`${query}-${pageStr}`} fallback={<div className="text-center py-20 font-bold text-blue-600">Atualizando lista de produtos...</div>}>
         <main> 
-          {!query && currentPage === 1 && <HeroCarousel />}
-          
           <section className="mx-auto max-w-7xl px-4 py-10">
             <div className="flex justify-between items-end mb-8 border-b pb-4">
               <div>
