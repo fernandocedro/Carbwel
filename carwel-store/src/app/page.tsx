@@ -8,7 +8,7 @@ import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
 import { Suspense } from "react";
 
-// 1. Função de busca (Lógica mantida, pois já funciona)
+// 1. Função de busca ajustada para maior precisão
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   const SELLER_ID = "72983036";
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
@@ -17,35 +17,29 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
   const offset = (currentPage - 1) * limit;
 
   try {
-    const url = `https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active&q=${encodeURIComponent(q)}&offset=${offset}&limit=${limit}`;
+    // ALTERAÇÃO CRUCIAL: Usamos o endpoint /sites/MLB/search filtrando pelo seu SELLER_ID
+    // Isso permite que a busca por texto (q) funcione como no site do Mercado Livre
+    const url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&q=${encodeURIComponent(q)}&offset=${offset}&limit=${limit}&status=active`;
+    
     const res = await fetch(url, {
       cache: 'no-store',
       headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
     });
 
     const searchData = await res.json();
-    const itemIds = searchData.results || [];
+    
+    // No endpoint de sites/MLB/search, os produtos já vêm completos em .results
+    const products = searchData.results || [];
     const totalItems = searchData.paging?.total || 0;
-
-    if (itemIds.length === 0) return { products: [], total: 0 };
-
-    const idsString = itemIds.join(',');
-    const itemsRes = await fetch(`https://api.mercadolibre.com/items?ids=${idsString}`, {
-       headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
-    });
-
-    const itemsData = await itemsRes.json();
-    const products = itemsData.filter((i: any) => i.code === 200).map((i: any) => i.body);
 
     return { products, total: totalItems };
   } catch (error) {
+    console.error("Erro na busca:", error);
     return { products: [], total: 0 };
   }
 }
 
-// 2. Componente Principal
 export default async function Home({ searchParams }: { searchParams: any }) {
-  // Aguardamos os parâmetros da URL
   const params = await searchParams; 
   const query = params?.q || "";
   const pageStr = params?.page || "1";
@@ -57,17 +51,18 @@ export default async function Home({ searchParams }: { searchParams: any }) {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* --- PARTE SUPERIOR FIXA (EXTERNAMENTE AO SUSPENSE) --- */}
       <TopBar />
       <Header />
       <CategoryNav />
       
-      {/* O Banner agora fica AQUI, fixo na topo e fora do Suspense */}
       {!query && currentPage === 1 && <HeroCarousel />}
-      {/* ----------------------------------------------------- */}
       
-      {/* A Key no Suspense força a atualização APENAS da lista de produtos */}
-      <Suspense key={`${query}-${pageStr}`} fallback={<div className="text-center py-20 font-bold text-blue-600">Atualizando lista de produtos...</div>}>
+      <Suspense key={`${query}-${pageStr}`} fallback={
+        <div className="flex flex-col items-center justify-center py-32">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="font-bold text-neutral-500">Buscando as melhores peças...</p>
+        </div>
+      }>
         <main> 
           <section className="mx-auto max-w-7xl px-4 py-10">
             <div className="flex justify-between items-end mb-8 border-b pb-4">
@@ -85,30 +80,36 @@ export default async function Home({ searchParams }: { searchParams: any }) {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map((product: any) => (
-                <div key={product.id} className="group border p-4 rounded-xl shadow-sm hover:shadow-lg transition-all bg-white flex flex-col justify-between border-neutral-100">
-                  <div>
-                    <div className="aspect-square relative mb-4 overflow-hidden rounded-lg bg-gray-50 flex items-center justify-center p-2">
-                      <img 
-                        src={product.thumbnail?.replace("-I.jpg", "-O.jpg")} 
-                        alt={product.title} 
-                        className="object-contain max-h-full group-hover:scale-110 transition-transform duration-300" 
-                      />
+            {products.length === 0 ? (
+              <div className="text-center py-20 border-2 border-dashed rounded-3xl">
+                <p className="text-neutral-400 font-medium">Nenhum produto encontrado para esta categoria.</p>
+                <Link href="/" className="text-blue-600 font-bold mt-2 inline-block">Ver todos os produtos</Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {products.map((product: any) => (
+                  <div key={product.id} className="group border p-4 rounded-xl shadow-sm hover:shadow-lg transition-all bg-white flex flex-col justify-between border-neutral-100">
+                    <div>
+                      <div className="aspect-square relative mb-4 overflow-hidden rounded-lg bg-gray-50 flex items-center justify-center p-2">
+                        <img 
+                          src={product.thumbnail?.replace("-I.jpg", "-W.jpg")} 
+                          alt={product.title} 
+                          className="object-contain max-h-full group-hover:scale-110 transition-transform duration-300" 
+                        />
+                      </div>
+                      <h3 className="text-[13px] font-bold line-clamp-2 h-10 mb-2 text-neutral-600 uppercase leading-tight">{product.title}</h3>
+                      <p className="text-2xl font-black text-blue-700">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                      </p>
                     </div>
-                    <h3 className="text-[13px] font-bold line-clamp-2 h-10 mb-2 text-neutral-600 uppercase leading-tight">{product.title}</h3>
-                    <p className="text-2xl font-black text-blue-700">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
-                    </p>
+                    <a href={product.permalink} target="_blank" rel="noopener noreferrer" className="mt-5 block text-center bg-blue-600 text-white py-3 rounded-lg font-black text-xs uppercase hover:bg-neutral-900 transition-colors">
+                      Comprar no Mercado Livre
+                    </a>
                   </div>
-                  <a href={product.permalink} target="_blank" rel="noopener noreferrer" className="mt-5 block text-center bg-blue-600 text-white py-3 rounded-lg font-black text-xs uppercase hover:bg-neutral-900 transition-colors">
-                    Comprar no Mercado Livre
-                  </a>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
-            {/* PAGINAÇÃO */}
             {totalPages > 1 && (
               <div className="mt-16 flex justify-center items-center gap-4 border-t pt-10">
                 {currentPage > 1 ? (
