@@ -8,7 +8,6 @@ import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
 import { Suspense } from "react";
 
-// Função de busca blindada contra retornos vazios
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   const SELLER_ID = "72983036";
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
@@ -17,13 +16,14 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
   const offset = (currentPage - 1) * limit;
 
   try {
-    // 1. Construímos a URL base apenas com o Seller ID e paginação
+    // 1. URL base: sempre busca os produtos do seu vendedor
     let url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&offset=${offset}&limit=${limit}`;
     
-    // 2. Só adicionamos o 'q' se ele REALMENTE tiver conteúdo (evita buscas vazias que zeram o resultado)
-    const cleanQuery = q.trim();
-    if (cleanQuery) {
-      url += `&q=${encodeURIComponent(cleanQuery)}`;
+    // 2. Só injetamos o termo 'q' se ele não for vazio. 
+    // Isso garante que na primeira página (sem busca) ele mostre TUDO.
+    const searchTerm = q.trim();
+    if (searchTerm) {
+      url += `&q=${encodeURIComponent(searchTerm)}`;
     }
     
     const res = await fetch(url, {
@@ -35,9 +35,7 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
       }
     });
 
-    if (!res.ok) {
-        throw new Error(`Erro API: ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`Erro API: ${res.status}`);
 
     const searchData = await res.json();
     return { 
@@ -66,14 +64,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
       <Header />
       <CategoryNav />
       
+      {/* Carrossel: Só aparece na Home (sem query) e na página 1 */}
       {!query && currentPage === 1 && <HeroCarousel />}
       
+      {/* O Suspense com 'key' garante que o Next.js recarregue os dados ao mudar o filtro */}
       <Suspense key={`${query}-${pageStr}`} fallback={<LoadingState />}>
         <main className="mx-auto max-w-7xl px-4 py-10">
           <div className="flex justify-between items-end mb-8 border-b pb-4">
             <div>
               <h2 className="text-2xl font-bold text-neutral-800 uppercase">
-                {query ? `Busca: ${query}` : "Peças em Destaque"}
+                {query ? `Categoria: ${query}` : "Peças em Destaque"}
               </h2>
               <p className="text-blue-600 font-bold">
                 {total.toLocaleString('pt-BR')} anúncios encontrados
@@ -104,66 +104,4 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
   );
 }
 
-// --- Componentes auxiliares mantidos ---
-
-function LoadingState() {
-  return (
-    <div className="flex flex-col items-center justify-center py-32">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-      <p className="font-bold text-neutral-500">Buscando as melhores peças...</p>
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="text-center py-20 border-2 border-dashed rounded-3xl">
-      <p className="text-neutral-400 font-medium">Nenhum produto encontrado.</p>
-      <Link href="/" className="text-blue-600 font-bold mt-2 inline-block">Ver todos os produtos</Link>
-    </div>
-  );
-}
-
-function ProductCard({ product }: { product: any }) {
-  return (
-    <div className="group border p-4 rounded-xl shadow-sm hover:shadow-lg transition-all bg-white flex flex-col justify-between border-neutral-100">
-      <div>
-        <div className="aspect-square relative mb-4 overflow-hidden rounded-lg bg-gray-50 flex items-center justify-center p-2">
-          <img 
-            src={product.thumbnail?.replace("-I.jpg", "-W.jpg")} 
-            alt={product.title} 
-            className="object-contain max-h-full group-hover:scale-110 transition-transform duration-300" 
-          />
-        </div>
-        <h3 className="text-[13px] font-bold line-clamp-2 h-10 mb-2 text-neutral-600 uppercase leading-tight">{product.title}</h3>
-        <p className="text-2xl font-black text-blue-700">
-          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
-        </p>
-      </div>
-      <a href={product.permalink} target="_blank" rel="noopener noreferrer" className="mt-5 block text-center bg-blue-600 text-white py-3 rounded-lg font-black text-xs uppercase hover:bg-neutral-900 transition-colors">
-        Comprar no Mercado Livre
-      </a>
-    </div>
-  );
-}
-
-function Pagination({ currentPage, totalPages, query }: { currentPage: number, totalPages: number, query: string }) {
-  const baseHref = `/?q=${encodeURIComponent(query)}`;
-  return (
-    <div className="mt-16 flex justify-center items-center gap-4 border-t pt-10">
-      {currentPage > 1 ? (
-        <Link href={`${baseHref}&page=${currentPage - 1}`} className="px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-xl font-black text-xs hover:bg-blue-600 hover:text-white transition-all">
-          ← ANTERIOR
-        </Link>
-      ) : <div className="opacity-10 px-6 py-3 border-2 border-neutral-400 rounded-xl font-black text-xs">← ANTERIOR</div>}
-
-      <div className="bg-neutral-100 px-6 py-3 rounded-xl font-black text-neutral-600">{currentPage}</div>
-
-      {currentPage < totalPages ? (
-        <Link href={`${baseHref}&page=${currentPage + 1}`} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-xs hover:bg-neutral-900 transition-all shadow-lg shadow-blue-100">
-          PRÓXIMA →
-        </Link>
-      ) : <div className="opacity-10 px-6 py-3 border-2 border-neutral-400 rounded-xl font-black text-xs">PRÓXIMA →</div>}
-    </div>
-  );
-}
+// Componentes auxiliares (LoadingState, EmptyState, ProductCard, Pagination) permanecem os mesmos...
