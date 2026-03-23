@@ -18,9 +18,7 @@ export default function Header() {
               alt="Logo Carbwel" 
               className="h-8 md:h-10 w-auto object-contain transition-transform group-hover:scale-105"
             />
-            <span className="ml-2 text-[10px] font-bold text-neutral-700 leading-tight uppercase hidden sm:block">
-              AUTO<br/>PEÇAS
-            </span>
+      
           </div>
         </Link>
 
