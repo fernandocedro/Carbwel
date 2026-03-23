@@ -17,9 +17,10 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
   const offset = (currentPage - 1) * limit;
 
   try {
-    // A busca aproximada (fuzzy) é nativa no parâmetro 'q'
-    // Removido o status=active para garantir que a API retorne os dados do Seller
-    const url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&q=${encodeURIComponent(q)}&offset=${offset}&limit=${limit}`;
+    // Se q estiver vazio, a API do ML pode se comportar mal com seller_id. 
+    // Garantimos que sempre haja um termo ou uma busca limpa pelo vendedor.
+    const searchQuery = q.trim() ? `&q=${encodeURIComponent(q)}` : "";
+    const url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}${searchQuery}&offset=${offset}&limit=${limit}`;
     
     const res = await fetch(url, {
       method: 'GET',
@@ -45,7 +46,6 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
   }
 }
 
-// O segredo está no 'await' do searchParams para o Next.js moderno
 export default async function Home({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const params = await searchParams; 
   const query = params?.q || "";
@@ -65,6 +65,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
       {/* Só mostra o carrossel na home sem busca e na primeira página */}
       {!query && currentPage === 1 && <HeroCarousel />}
       
+      {/* A key no Suspense força o Next.js a atualizar a UI quando a query muda */}
       <Suspense key={`${query}-${pageStr}`} fallback={<LoadingState />}>
         <main className="mx-auto max-w-7xl px-4 py-10">
           <div className="flex justify-between items-end mb-8 border-b pb-4">
@@ -92,7 +93,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
             </div>
           )}
 
-          {/* Paginação */}
           {totalPages > 1 && (
             <Pagination currentPage={currentPage} totalPages={totalPages} query={query} />
           )}
@@ -102,7 +102,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
   );
 }
 
-// Componentes auxiliares para o código ficar limpo
+// --- Componentes auxiliares mantidos conforme original ---
+
 function LoadingState() {
   return (
     <div className="flex flex-col items-center justify-center py-32">
