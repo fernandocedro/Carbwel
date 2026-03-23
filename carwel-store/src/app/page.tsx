@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-
+export const preferredRegion = 'sao1';
 import TopBar from "./components/TopBar";
 import Header from "./components/Header";
 import CategoryNav from "./components/CategoryNav";
