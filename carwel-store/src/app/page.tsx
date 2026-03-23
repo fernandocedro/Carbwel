@@ -8,7 +8,7 @@ import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
 import { Suspense } from "react";
 
-// Função de busca que fala com a API do Mercado Livre
+// Função de busca blindada contra retornos vazios
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   const SELLER_ID = "72983036";
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
@@ -17,10 +17,14 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
   const offset = (currentPage - 1) * limit;
 
   try {
-    // Se q estiver vazio, a API do ML pode se comportar mal com seller_id. 
-    // Garantimos que sempre haja um termo ou uma busca limpa pelo vendedor.
-    const searchQuery = q.trim() ? `&q=${encodeURIComponent(q)}` : "";
-    const url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}${searchQuery}&offset=${offset}&limit=${limit}`;
+    // 1. Construímos a URL base apenas com o Seller ID e paginação
+    let url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&offset=${offset}&limit=${limit}`;
+    
+    // 2. Só adicionamos o 'q' se ele REALMENTE tiver conteúdo (evita buscas vazias que zeram o resultado)
+    const cleanQuery = q.trim();
+    if (cleanQuery) {
+      url += `&q=${encodeURIComponent(cleanQuery)}`;
+    }
     
     const res = await fetch(url, {
       method: 'GET',
@@ -36,10 +40,10 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
     }
 
     const searchData = await res.json();
-    const products = searchData.results || [];
-    const totalItems = searchData.paging?.total || 0;
-
-    return { products, total: totalItems };
+    return { 
+      products: searchData.results || [], 
+      total: searchData.paging?.total || 0 
+    };
   } catch (error) {
     console.error("Erro na busca:", error);
     return { products: [], total: 0 };
@@ -62,10 +66,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
       <Header />
       <CategoryNav />
       
-      {/* Só mostra o carrossel na home sem busca e na primeira página */}
       {!query && currentPage === 1 && <HeroCarousel />}
       
-      {/* A key no Suspense força o Next.js a atualizar a UI quando a query muda */}
       <Suspense key={`${query}-${pageStr}`} fallback={<LoadingState />}>
         <main className="mx-auto max-w-7xl px-4 py-10">
           <div className="flex justify-between items-end mb-8 border-b pb-4">
@@ -102,7 +104,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ q
   );
 }
 
-// --- Componentes auxiliares mantidos conforme original ---
+// --- Componentes auxiliares mantidos ---
 
 function LoadingState() {
   return (
