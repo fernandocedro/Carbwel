@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, MenuIcon } from "./icons";
 import { menu } from "./data";
+import Link from "next/link"; // Importação necessária para navegação interna
 
 function useIsDesktop(breakpoint = 768) {
   const [isDesktop, setIsDesktop] = useState(false);
@@ -38,9 +39,16 @@ export default function CategoryNav() {
 
   const items = useMemo(() => menu, []);
 
+  // Função auxiliar para fechar os menus ao clicar em uma categoria
+  const closeMenus = () => {
+    setOpenIndex(null);
+    setAllOpen(false);
+  };
+
   return (
     <div ref={rootRef} className="border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
+        
         {/* Menu principal (Motor / Câmbio / etc.) */}
         <nav className="hidden items-center gap-8 md:flex">
           {items.map((it, idx) => (
@@ -65,17 +73,19 @@ export default function CategoryNav() {
                 <ChevronDown className="h-4 w-4 opacity-70" />
               </button>
 
-              {/* Dropdown */}
+              {/* Dropdown de Subcategorias */}
               {openIndex === idx && it.children?.length ? (
                 <div className="absolute left-0 top-full z-50 mt-3 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg">
                   {it.children.map((c) => (
-                    <a
-                      key={c.href}
-                      href={c.href}
-                      className="block rounded-xl px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-100"
+                    <Link
+                      key={c.label}
+                      // Alterado para buscar pela label no parâmetro "q"
+                      href={`/?q=${encodeURIComponent(c.label)}`}
+                      onClick={closeMenus}
+                      className="block rounded-xl px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-100 hover:text-blue-600 transition-colors"
                     >
                       {c.label}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               ) : null}
@@ -83,7 +93,7 @@ export default function CategoryNav() {
           ))}
         </nav>
 
-        {/* "Todas as categorias" (igual no print) */}
+        {/* Botão "Todas as categorias" */}
         <button
           type="button"
           className="ml-auto flex items-center gap-2 text-sm font-extrabold tracking-wide text-red-600 hover:opacity-90"
@@ -94,7 +104,7 @@ export default function CategoryNav() {
         </button>
       </div>
 
-      {/* Drawer simples de “Todas as categorias” */}
+      {/* Grid de "Todas as categorias" */}
       {allOpen ? (
         <div className="mx-auto max-w-7xl px-4 pb-4">
           <div className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm">
@@ -106,13 +116,15 @@ export default function CategoryNav() {
                   </div>
                   <div className="space-y-1">
                     {it.children?.map((c) => (
-                      <a
-                        key={c.href}
-                        href={c.href}
-                        className="block rounded-xl px-2 py-1 text-sm text-neutral-700 hover:bg-white"
+                      <Link
+                        key={c.label}
+                        // Alterado para buscar pela label no parâmetro "q"
+                        href={`/?q=${encodeURIComponent(c.label)}`}
+                        onClick={closeMenus}
+                        className="block rounded-xl px-2 py-1 text-sm text-neutral-700 hover:bg-white hover:text-blue-600"
                       >
                         {c.label}
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 </div>
