@@ -44,16 +44,14 @@ export default function CategoryNav() {
   };
 
   /**
-   * FUNÇÃO CRUCIAL: Limpa o nome da categoria para a API do ML.
-   * Ex: "Suspensão/Direção" -> "Suspensão Direção"
-   * Ex: "Bobinas de Ignição" -> "Bobina Ignição"
+   * FUNÇÃO AJUSTADA: Agora permite uma busca abrangente.
+   * Em vez de remover partes da palavra, apenas limpa símbolos.
+   * Deixa o motor do Mercado Livre tratar plural/singular e preposições.
    */
   const formatQuery = (label: string) => {
     return label
-      .replace("/", " ")       // Remove barras
-      .replace(" de ", " ")    // Remove preposições comuns
-      .replace(" para ", " ")  
-      .replace("s ", " ")      // Tenta singularizar termos simples (ajuste conforme necessário)
+      .replace(/[/\\-]/g, " ") // Substitui barras (/ \) e hifens por espaço
+      .replace(/\s+/g, " ")    // Remove espaços duplos acidentais
       .trim();
   };
 
