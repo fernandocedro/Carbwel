@@ -148,5 +148,3 @@ export default function CategoryNav() {
     </div>
   );
 }
-
-Modifique no meu código e me mande 
