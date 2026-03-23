@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, MenuIcon } from "./icons";
 import { menu } from "./data";
-import Link from "next/link"; // Importação necessária para navegação interna
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 function useIsDesktop(breakpoint = 768) {
   const [isDesktop, setIsDesktop] = useState(false);
@@ -21,6 +22,7 @@ function useIsDesktop(breakpoint = 768) {
 
 export default function CategoryNav() {
   const isDesktop = useIsDesktop(768);
+  const router = useRouter();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [allOpen, setAllOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -39,34 +41,40 @@ export default function CategoryNav() {
 
   const items = useMemo(() => menu, []);
 
-  // Função auxiliar para fechar os menus ao clicar em uma categoria
   const closeMenus = () => {
     setOpenIndex(null);
     setAllOpen(false);
+  };
+
+  // Função para limpar o texto e buscar (ex: remove "/" de Suspensão/Direção)
+  const handleMainCategoryClick = (label: string) => {
+    const searchTerm = label.replace("/", " ");
+    router.push(`/?q=${encodeURIComponent(searchTerm)}`);
+    closeMenus();
   };
 
   return (
     <div ref={rootRef} className="border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
         
-        {/* Menu principal (Motor / Câmbio / etc.) */}
+        {/* Menu principal */}
         <nav className="hidden items-center gap-8 md:flex">
           {items.map((it, idx) => (
             <div
               key={it.label}
               className="relative"
-              onMouseEnter={() => {
-                if (isDesktop) setOpenIndex(idx);
-              }}
-              onMouseLeave={() => {
-                if (isDesktop) setOpenIndex(null);
-              }}
+              onMouseEnter={() => isDesktop && setOpenIndex(idx)}
+              onMouseLeave={() => isDesktop && setOpenIndex(null)}
             >
               <button
                 type="button"
-                className="flex items-center gap-1 text-sm font-semibold text-slate-800 hover:text-red-600"
+                className="flex items-center gap-1 text-sm font-semibold text-slate-800 hover:text-red-600 transition-colors"
                 onClick={() => {
-                  if (!isDesktop) setOpenIndex(openIndex === idx ? null : idx);
+                  if (isDesktop) {
+                    handleMainCategoryClick(it.label);
+                  } else {
+                    setOpenIndex(openIndex === idx ? null : idx);
+                  }
                 }}
               >
                 {it.label}
@@ -75,14 +83,14 @@ export default function CategoryNav() {
 
               {/* Dropdown de Subcategorias */}
               {openIndex === idx && it.children?.length ? (
-                <div className="absolute left-0 top-full z-50 mt-3 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg">
+                <div className="absolute left-0 top-full z-50 mt-3 w-64 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg animate-in fade-in slide-in-from-top-1">
                   {it.children.map((c) => (
                     <Link
                       key={c.label}
-                      // Alterado para buscar pela label no parâmetro "q"
-                      href={`/?q=${encodeURIComponent(c.label)}`}
+                      // Substitui "/" por espaço para a busca do ML funcionar melhor
+                      href={`/?q=${encodeURIComponent(c.label.replace("/", " "))}`}
                       onClick={closeMenus}
-                      className="block rounded-xl px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-100 hover:text-blue-600 transition-colors"
+                      className="block rounded-xl px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-50 hover:text-blue-600 transition-colors"
                     >
                       {c.label}
                     </Link>
@@ -96,7 +104,7 @@ export default function CategoryNav() {
         {/* Botão "Todas as categorias" */}
         <button
           type="button"
-          className="ml-auto flex items-center gap-2 text-sm font-extrabold tracking-wide text-red-600 hover:opacity-90"
+          className="ml-auto flex items-center gap-2 text-sm font-extrabold tracking-wide text-red-600 hover:opacity-80 transition-opacity"
           onClick={() => setAllOpen((v) => !v)}
         >
           <MenuIcon className="h-5 w-5" />
@@ -104,24 +112,26 @@ export default function CategoryNav() {
         </button>
       </div>
 
-      {/* Grid de "Todas as categorias" */}
+      {/* Grid Expandido */}
       {allOpen ? (
-        <div className="mx-auto max-w-7xl px-4 pb-4">
-          <div className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm">
-            <div className="grid gap-3 md:grid-cols-4">
+        <div className="mx-auto max-w-7xl px-4 pb-4 animate-in fade-in zoom-in-95">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-xl">
+            <div className="grid gap-4 md:grid-cols-4">
               {items.map((it) => (
-                <div key={it.label} className="rounded-2xl bg-neutral-50 p-3">
-                  <div className="mb-2 text-sm font-extrabold text-slate-900">
+                <div key={it.label} className="rounded-2xl bg-neutral-50 p-4">
+                  <button 
+                    onClick={() => handleMainCategoryClick(it.label)}
+                    className="mb-3 text-sm font-extrabold text-slate-900 hover:text-red-600 uppercase text-left w-full"
+                  >
                     {it.label}
-                  </div>
-                  <div className="space-y-1">
+                  </button>
+                  <div className="space-y-2">
                     {it.children?.map((c) => (
                       <Link
                         key={c.label}
-                        // Alterado para buscar pela label no parâmetro "q"
-                        href={`/?q=${encodeURIComponent(c.label)}`}
+                        href={`/?q=${encodeURIComponent(c.label.replace("/", " "))}`}
                         onClick={closeMenus}
-                        className="block rounded-xl px-2 py-1 text-sm text-neutral-700 hover:bg-white hover:text-blue-600"
+                        className="block rounded-lg px-2 py-1 text-sm text-neutral-600 hover:bg-white hover:text-blue-600 transition-all"
                       >
                         {c.label}
                       </Link>
