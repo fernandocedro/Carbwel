@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-export const revalidate = 0; // Força a busca de dados novos a cada clique
+export const revalidate = 0;
 export const preferredRegion = 'sao1';
 
 import TopBar from "./components/TopBar";
@@ -11,15 +11,19 @@ import Link from "next/link";
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   const SELLER_ID = "72983036";
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
+  
+  // Forçamos o limite fixo em 20 e garantimos que a página seja um número inteiro
   const limit = 20;
-  const offset = (parseInt(page) - 1) * limit;
+  const currentPage = Math.max(1, parseInt(page) || 1);
+  
+  // CÁLCULO DO OFFSET (Pulo): Página 1 = 0, Página 2 = 20, Página 3 = 40...
+  const offset = (currentPage - 1) * limit;
 
   try {
-    // Rota com offset para paginação e q para busca
-    const url = `https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active&q=${q}&offset=${offset}&limit=${limit}`;
+    const url = `https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active&q=${encodeURIComponent(q)}&offset=${offset}&limit=${limit}`;
     
     const res = await fetch(url, {
-      cache: 'no-store', // Crucial para a paginação funcionar
+      cache: 'no-store',
       headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
     });
 
@@ -35,22 +39,25 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
     });
 
     const itemsData = await itemsRes.json();
-    const products = itemsData.filter((i: any) => i.code === 200).map((i: any) => i.body);
+    const products = itemsData
+      .filter((i: any) => i.code === 200)
+      .map((i: any) => i.body);
 
     return { products, total: totalItems };
   } catch (error) {
+    console.error("Erro na busca:", error);
     return { products: [], total: 0 };
   }
 }
 
-// O Next.js passa automaticamente o searchParams para a Home
 export default async function Home({ searchParams }: { searchParams: { q?: string; page?: string } }) {
+  // Garantimos que pegamos os valores limpos da URL
   const query = searchParams?.q || "";
-  const page = searchParams?.page || "1";
+  const pageStr = searchParams?.page || "1";
   
-  const { products, total } = await getCarbwelProducts(query, page);
+  const { products, total } = await getCarbwelProducts(query, pageStr);
   
-  const currentPage = parseInt(page);
+  const currentPage = Math.max(1, parseInt(pageStr) || 1);
   const totalPages = Math.ceil(total / 20);
 
   return (
@@ -59,66 +66,75 @@ export default async function Home({ searchParams }: { searchParams: { q?: strin
       <Header />
       <CategoryNav />
       
-      {/* A Key aqui embaixo é o segredo: ela muda quando a página ou a busca mudam */}
-      <main key={Math.random()}> 
+      {/* A Key baseada na query e page força o refresh correto da lista */}
+      <main key={`${query}-${currentPage}`}> 
         {!query && currentPage === 1 && <HeroCarousel />}
         
         <section className="mx-auto max-w-7xl px-4 py-10">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-neutral-800">
-              {query ? `Busca: ${query}` : "Peças em Destaque"}
-            </h2>
+          <div className="flex justify-between items-end mb-8 border-b pb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-neutral-800 uppercase">
+                {query ? `Busca: ${query}` : "Peças em Destaque"}
+              </h2>
+              <p className="text-blue-600 font-bold">
+                {total.toLocaleString('pt-BR')} anúncios encontrados
+              </p>
+            </div>
             <div className="text-right">
-                <p className="text-sm text-neutral-500 font-bold">{total.toLocaleString('pt-BR')} itens</p>
-                <p className="text-xs text-blue-600">Página {currentPage} de {totalPages}</p>
+              <span className="text-xs font-bold text-neutral-400">PÁGINA</span>
+              <p className="text-xl font-black text-neutral-800">{currentPage} / {totalPages || 1}</p>
             </div>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products.map((product: any) => (
-              <div key={product.id} className="group border p-4 rounded-lg shadow-sm hover:shadow-md transition-all bg-white flex flex-col justify-between">
+              <div key={product.id} className="group border p-4 rounded-xl shadow-sm hover:shadow-lg transition-all bg-white flex flex-col justify-between border-neutral-100">
                 <div>
-                  <div className="aspect-square relative mb-4 overflow-hidden rounded-md bg-gray-50 flex items-center justify-center">
+                  <div className="aspect-square relative mb-4 overflow-hidden rounded-lg bg-gray-50 flex items-center justify-center p-2">
                     <img 
                       src={product.thumbnail?.replace("-I.jpg", "-O.jpg")} 
                       alt={product.title} 
-                      className="object-contain max-h-full" 
+                      className="object-contain max-h-full group-hover:scale-110 transition-transform duration-300" 
                     />
                   </div>
-                  <h3 className="text-xs font-semibold line-clamp-2 h-8 mb-2 text-neutral-700 uppercase">{product.title}</h3>
-                  <p className="text-lg font-black text-blue-700">
+                  <h3 className="text-[13px] font-bold line-clamp-2 h-10 mb-2 text-neutral-600 uppercase leading-tight">{product.title}</h3>
+                  <p className="text-2xl font-black text-blue-700">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
                   </p>
                 </div>
-                <a href={product.permalink} target="_blank" className="mt-4 block text-center bg-blue-600 text-white py-2 rounded font-bold text-xs uppercase hover:bg-blue-800">
-                  Ver no Mercado Livre
+                <a href={product.permalink} target="_blank" rel="noopener noreferrer" className="mt-5 block text-center bg-blue-600 text-white py-3 rounded-lg font-black text-xs uppercase hover:bg-neutral-900 transition-colors">
+                  Comprar no Mercado Livre
                 </a>
               </div>
             ))}
           </div>
 
-          {/* Paginação Estilizada */}
-          <div className="mt-16 flex justify-center items-center gap-6">
-            {currentPage > 1 ? (
-              <Link 
-                href={`/?page=${currentPage - 1}${query ? `&q=${query}` : ""}`}
-                className="px-6 py-2 border-2 border-blue-600 text-blue-600 rounded-md font-bold hover:bg-blue-50"
-              >
-                ← ANTERIOR
-              </Link>
-            ) : <div className="w-[120px]"></div>}
+          {/* PAGINAÇÃO CORRIGIDA */}
+          {totalPages > 1 && (
+            <div className="mt-16 flex justify-center items-center gap-4 border-t pt-10">
+              {currentPage > 1 ? (
+                <Link 
+                  href={`/?page=${currentPage - 1}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
+                  className="px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-xl font-black text-xs hover:bg-blue-600 hover:text-white transition-all"
+                >
+                  ← ANTERIOR
+                </Link>
+              ) : <div className="opacity-10 px-6 py-3 border-2 border-neutral-400 rounded-xl font-black text-xs">← ANTERIOR</div>}
 
-            <span className="text-lg font-bold text-neutral-400">{currentPage} / {totalPages}</span>
+              <div className="bg-neutral-100 px-6 py-3 rounded-xl font-black text-neutral-600">
+                 {currentPage}
+              </div>
 
-            {currentPage < totalPages ? (
-              <Link 
-                href={`/?page=${currentPage + 1}${query ? `&q=${query}` : ""}`}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md font-bold hover:bg-blue-800 shadow-md"
-              >
-                PRÓXIMA →
-              </Link>
-            ) : <div className="w-[120px]"></div>}
-          </div>
+              {currentPage < totalPages ? (
+                <Link 
+                  href={`/?page=${currentPage + 1}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-xs hover:bg-neutral-900 transition-all shadow-lg shadow-blue-100"
+                >
+                  PRÓXIMA →
+                </Link>
+              ) : <div className="opacity-10 px-6 py-3 border-2 border-neutral-400 rounded-xl font-black text-xs">PRÓXIMA →</div>}
+            </div>
+          )}
         </section>
       </main>
     </div>
