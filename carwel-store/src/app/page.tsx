@@ -7,15 +7,23 @@ import HeroCarousel from "./components/HeroCarousel";
 
 async function getCarbwelProducts() {
   const SELLER_ID = "72983036";
+  // Puxa o token que você configurou nas variáveis de ambiente da Vercel
+  const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN; 
 
   try {
-    // Fazendo a requisição pública sem o token de acesso (que estava expirando e causando o erro 403)
+    // Agora enviamos o cabeçalho de autorização para evitar o erro 403
     const res = await fetch(`https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}`, {
-      cache: 'no-store' 
+      cache: 'no-store',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'User-Agent': 'CarbwelSite/1.0' // Identifica seu site para o Mercado Livre
+      }
     });
 
     if (!res.ok) {
-      console.error(`Status da API: ${res.status}`);
+      // Se ainda der erro, o log na Vercel vai nos dizer exatamente o porquê
+      const errorDetail = await res.json().catch(() => ({}));
+      console.error(`Status da API: ${res.status}`, errorDetail);
       return [];
     }
 
@@ -45,7 +53,7 @@ export default async function Home() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product: any) => (
+            {products.map((product) => (
               <div key={product.id} className="group border p-4 rounded-lg hover:shadow-xl transition-all bg-white flex flex-col justify-between">
                 <div>
                   <div className="aspect-square relative mb-4 overflow-hidden rounded-md bg-gray-50">
@@ -79,7 +87,8 @@ export default async function Home() {
             <div className="text-center py-20 border-2 border-dashed rounded-xl border-neutral-200">
               <p className="text-neutral-500 font-medium">Sincronizando estoque da Carbwel...</p>
               <p className="text-xs text-neutral-400 mt-2 italic text-blue-600">
-                Aguardando liberação dos 5.582 anúncios ativos. A conta já está Certificada e Regularizada.
+                A conta já possui permissões {products.length === 0 ? "em validação" : "ativas"}. 
+                Verifique se o ML_ACCESS_TOKEN na Vercel é o mais recente.
               </p>
             </div>
           )}
