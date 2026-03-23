@@ -11,7 +11,7 @@ export default function Header() {
         <Link href="/" className="flex items-center group cursor-pointer">
           <div className="flex items-center">
             <img 
-              src="/logo.png" 
+              src="../public/images/logo.png" 
               alt="Logo Carbwel" 
               className="h-8 md:h-10 w-auto object-contain"
             />
