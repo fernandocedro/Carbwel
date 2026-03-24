@@ -11,7 +11,6 @@ import Link from "next/link";
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   try {
     const baseUrl = "https://carbwel.vercel.app";
-    // Passamos o 'page' para a sua API para que ela faça o cálculo do offset do Mercado Livre
     const url = `${baseUrl}/api/ml/products?q=${encodeURIComponent(q)}&page=${page}`;
 
     const res = await fetch(url, {
@@ -23,10 +22,16 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
 
     const data = await res.json();
 
-    // Mapeamento flexível para aceitar diferentes formatos de retorno da API
+    // Mapeamento extra-robusto para garantir que pegamos o total de 3000+ produtos
+    const totalItems = 
+      data.paging?.total || 
+      data.total || 
+      data.paging?.primary_results || 
+      (Array.isArray(data) ? data.length : 0);
+
     return { 
       products: data.results || data.products || (Array.isArray(data) ? data : []), 
-      total: data.paging?.total || data.total || (Array.isArray(data) ? data.length : 0) 
+      total: totalItems 
     };
   } catch (error) {
     console.error("Erro na ponte da API:", error);
@@ -44,10 +49,12 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
   const { products, total } = await getCarbwelProducts(query, pageStr);
   
   const currentPage = Math.max(1, parseInt(pageStr) || 1);
-  const itemsPerPage = 20; // Padrão do Mercado Livre
+  const itemsPerPage = 20; 
+  
+  // Calculamos as páginas com base no total real (ex: 3000 / 20 = 150 páginas)
   const totalPages = Math.ceil(total / itemsPerPage);
 
-  // Lógica para o contador numérico (ex: Mostrando 1-20 de 150)
+  // Lógica para o contador numérico (ex: Mostrando 1-20 de 3000)
   const startItem = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, total);
 
@@ -57,7 +64,6 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
       <Header />
       <CategoryNav />
       
-      {/* O carrossel só aparece se não houver busca e estivermos na página 1 */}
       {!query && currentPage === 1 && <HeroCarousel />}
       
       <main className="mx-auto max-w-7xl px-4 py-10">
@@ -72,9 +78,8 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
             </p>
           </div>
           
-          {/* Contador numérico de exibição */}
-          <div className="text-[11px] uppercase font-black text-neutral-400 tracking-widest bg-neutral-50 px-3 py-1 rounded-full">
-            Mostrando {startItem} — {endItem}
+          <div className="text-[11px] uppercase font-black text-neutral-400 tracking-widest bg-neutral-50 px-3 py-1 rounded-full border border-neutral-100 shadow-sm">
+            Mostrando {startItem.toLocaleString('pt-BR')} — {endItem.toLocaleString('pt-BR')}
           </div>
         </div>
 
@@ -87,9 +92,9 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
               ))}
             </div>
 
-            {/* Navegação de Páginas */}
-            <div className="mt-20 border-t border-neutral-100 pt-12 flex flex-col items-center gap-8">
-              {totalPages > 1 && (
+            {/* Navegação de Páginas - Forçada a aparecer se total > 20 */}
+            {(totalPages > 1 || total > itemsPerPage) && (
+              <div className="mt-20 border-t border-neutral-100 pt-12 flex flex-col items-center gap-8">
                 <div className="flex items-center gap-3">
                   {/* Botão Voltar */}
                   {currentPage > 1 ? (
@@ -106,13 +111,13 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
                   )}
 
                   {/* Mostrador Central (Página X de Y) */}
-                  <div className="flex items-center gap-2 bg-neutral-50 p-1.5 rounded-2xl border border-neutral-100">
+                  <div className="flex items-center gap-2 bg-neutral-50 p-1.5 rounded-2xl border border-neutral-100 shadow-inner">
                     <span className="w-10 h-10 flex items-center justify-center bg-white text-blue-700 rounded-xl shadow-sm font-black text-sm border border-neutral-100">
                       {currentPage}
                     </span>
                     <span className="px-2 text-neutral-400 font-bold text-[10px] uppercase tracking-tighter">de</span>
-                    <span className="w-10 h-10 flex items-center justify-center text-neutral-600 font-black text-sm">
-                      {totalPages}
+                    <span className="w-12 h-10 flex items-center justify-center text-neutral-600 font-black text-sm">
+                      {totalPages > 0 ? totalPages.toLocaleString('pt-BR') : '...'}
                     </span>
                   </div>
 
@@ -130,15 +135,14 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
                     </div>
                   )}
                 </div>
-              )}
-              
-              {/* Atalho para voltar ao início se estiver longe */}
-              {currentPage > 3 && (
-                <Link href="/" className="text-[10px] font-black text-neutral-400 uppercase hover:text-blue-600 transition-colors tracking-widest">
-                  Voltar para a primeira página
-                </Link>
-              )}
-            </div>
+
+                {currentPage > 1 && (
+                  <Link href="/" className="text-[10px] font-black text-neutral-400 uppercase hover:text-blue-600 transition-colors tracking-widest">
+                    Voltar para o início
+                  </Link>
+                )}
+              </div>
+            )}
           </>
         ) : (
           <div className="text-center py-24 border-2 border-dashed border-neutral-100 rounded-[40px] bg-neutral-50/50">
@@ -153,7 +157,7 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
   );
 }
 
-// 3. Componente Card de Produto
+// 3. Componente Card de Produto (Mantenha o seu original ou use este estilizado)
 function ProductCard({ product }: { product: any }) {
   const imageUrl = product.thumbnail?.replace("-I.jpg", "-W.jpg") || "/placeholder.png";
 
