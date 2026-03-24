@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, MenuIcon } from "./icons";
-import { menu, MenuItem } from "./data"; // Certifique-se que o type MenuItem está exportado no data.ts
+import { menu } from "./data";
 import { useRouter } from "next/navigation";
 
 function useIsDesktop(breakpoint = 768) {
@@ -36,28 +36,30 @@ export default function CategoryNav() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const items = useMemo(() => (Array.isArray(menu) ? (menu as MenuItem[]) : []), []);
+  const items = useMemo(() => (Array.isArray(menu) ? menu : []), []);
 
   const closeMenus = () => {
     setOpenIndex(null);
     setAllOpen(false);
   };
 
-  // LÓGICA ATUALIZADA: Prioriza o Slug (Busca) mas aceita o ID como fallback
-  const handleSearch = (label: string, slug?: string, categoryId?: string) => {
+  // Função de busca flexível para aceitar qualquer parâmetro que venha do dado
+  const handleSearch = (item: any) => {
     closeMenus();
     
-    if (slug) {
-      // Se houver slug, faz a busca por texto (Mais estável no seu caso)
-      router.push(`/?q=${encodeURIComponent(slug)}`, { scroll: true });
-    } else if (categoryId) {
-      // Se houver ID técnico
-      router.push(`/?category=${categoryId}`, { scroll: true });
-    } else {
-      // Fallback: limpa o label e busca
-      const q = label.replace(/[^a-zA-Z0-9À-ÿ\s]/g, "").trim();
-      router.push(`/?q=${encodeURIComponent(q)}`, { scroll: true });
+    // 1. Prioridade para o SLUG (Busca por texto que funciona 100%)
+    if (item.slug) {
+      return router.push(`/?q=${encodeURIComponent(item.slug)}`, { scroll: true });
     }
+    
+    // 2. Segunda prioridade para o ID de categoria
+    if (item.categoryId) {
+      return router.push(`/?category=${item.categoryId}`, { scroll: true });
+    }
+
+    // 3. Fallback final: usa o label/nome limpo
+    const fallbackQ = item.label?.replace(/[^a-zA-Z0-9À-ÿ\s]/g, "").trim() || "";
+    router.push(`/?q=${encodeURIComponent(fallbackQ)}`, { scroll: true });
   };
 
   return (
@@ -65,7 +67,7 @@ export default function CategoryNav() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
         
         <nav className="hidden items-center gap-6 md:flex">
-          {items.map((it, idx) => (
+          {items.map((it: any, idx: number) => (
             <div
               key={it.label || idx}
               className="relative"
@@ -75,8 +77,7 @@ export default function CategoryNav() {
               <button
                 type="button"
                 className="flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-blue-600 transition-colors uppercase tracking-tight"
-                // LINHA CORRIGIDA: Passa it.slug e it.categoryId
-                onClick={() => handleSearch(it.label, it.slug, it.categoryId)}
+                onClick={() => handleSearch(it)}
               >
                 {it.label}
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${openIndex === idx ? 'rotate-180' : ''}`} />
@@ -84,10 +85,10 @@ export default function CategoryNav() {
 
               {openIndex === idx && it.children && (
                 <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
-                  {it.children.map((c) => (
+                  {it.children.map((c: any) => (
                     <button
                       key={c.label}
-                      onClick={() => handleSearch(c.label, c.slug, c.categoryId)}
+                      onClick={() => handleSearch(c)}
                       className="block w-full text-left rounded-lg px-3 py-2 text-[13px] text-neutral-600 hover:bg-blue-50 hover:text-blue-700 transition-all"
                     >
                       {c.label}
@@ -113,19 +114,19 @@ export default function CategoryNav() {
         <div className="absolute left-0 right-0 z-50 bg-white border-b shadow-2xl animate-in slide-in-from-top-2 duration-300 overflow-y-auto max-h-[80vh]">
           <div className="mx-auto max-w-7xl p-8">
             <div className="grid gap-8 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-              {items.map((it) => (
+              {items.map((it: any) => (
                 <div key={it.label} className="space-y-4">
                   <button 
-                    onClick={() => handleSearch(it.label, it.slug, it.categoryId)}
+                    onClick={() => handleSearch(it)}
                     className="text-[12px] font-black text-blue-900 hover:text-red-600 uppercase text-left w-full border-b border-neutral-100 pb-2 transition-colors"
                   >
                     {it.label}
                   </button>
                   <div className="flex flex-col gap-2">
-                    {it.children?.map((c) => (
+                    {it.children?.map((c: any) => (
                       <button
                         key={c.label}
-                        onClick={() => handleSearch(c.label, c.slug, c.categoryId)}
+                        onClick={() => handleSearch(c)}
                         className="text-[12px] text-left text-neutral-500 hover:text-blue-600 transition-colors"
                       >
                         {c.label}
