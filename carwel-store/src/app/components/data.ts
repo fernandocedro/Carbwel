@@ -1,44 +1,57 @@
 export type MenuItem = {
   label: string;
   slug?: string;
-  href?: string;
-  children?: { label: string; slug: string; href?: string }[];
+  children?: { label: string; slug: string }[];
 };
 
 export const menu: MenuItem[] = [
   {
-    label: "Motor e Carburação",
+    label: "Carburação",
+    slug: "Carburador",
     children: [
       { label: "Carburadores", slug: "Carburador" },
-      { label: "Kits de Reparo", slug: "Kit+Reparo" },
-      { label: "Bombas de Combustível", slug: "Bomba+Combustivel" },
-      { label: "Bombas de Água", slug: "Bomba+Agua" },
-      { label: "Bobinas de Ignição", slug: "Bobina" },
-      { label: "Cabos de Vela", slug: "Cabo+Vela" },
-      { label: "Injetores", slug: "Injetor" },
-      { label: "Juntas", slug: "Junta" },
+      { label: "Kits de Reparo", slug: "Reparo" },
+      { label: "Boias", slug: "Boia" },
+      { label: "Válvulas de Agulha", slug: "Valvula" },
       { label: "Giclês", slug: "Gicle" },
+      { label: "Bicos Injetores", slug: "Injetor" },
     ],
   },
   {
-    label: "Filtros",
+    label: "Ignição",
+    slug: "Ignicao",
     children: [
-      { label: "Filtros de Ar", slug: "Filtro+Ar" },
-      { label: "Filtros de Combustível", slug: "Filtro+Combustivel" },
-      { label: "Filtros de Óleo", slug: "Filtro+Oleo" },
+      { label: "Bobinas", slug: "Bobina" },
+      { label: "Cabos de Vela", slug: "Cabo" },
+      { label: "Velas de Ignição", slug: "Vela" },
+      { label: "Distribuidores", slug: "Distribuidor" },
+      { label: "Módulos", slug: "Modulo" },
     ],
   },
   {
-    label: "Suspensão e Direção",
+    label: "Bombas e Filtros",
+    slug: "Bomba",
     children: [
-      { label: "Pivôs", slug: "Pivo" },
-      { label: "Bieletas", slug: "Bieleta" },
-      { label: "Terminais de Direção", slug: "Terminal+Direcao" },
-      { label: "Rolamentos", slug: "Rolamento" },
+      { label: "Bombas de Combustível", slug: "Bomba" },
+      { label: "Bombas de Água", slug: "Bomba" },
+      { label: "Filtros de Ar", slug: "Filtro" },
+      { label: "Filtros de Combustível", slug: "Filtro" },
+      { label: "Filtros de Óleo", slug: "Filtro" },
+    ],
+  },
+  {
+    label: "Motor e Juntas",
+    slug: "Junta",
+    children: [
+      { label: "Jogos de Juntas", slug: "Junta" },
+      { label: "Retentores", slug: "Retentor" },
+      { label: "Correias", slug: "Correia" },
+      { label: "Coxins", slug: "Coxin" },
     ],
   },
   {
     label: "Acessórios",
+    slug: "Engate",
     children: [
       { label: "Engates de Reboque", slug: "Engate" },
       { label: "Irrigação e Jardim", slug: "Irrigacao" },
