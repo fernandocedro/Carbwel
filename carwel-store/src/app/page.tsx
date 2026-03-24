@@ -7,11 +7,10 @@ import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
 
-// 1. Função de Busca atualizada para aceitar category
+// 1. Função de Busca interna
 async function getCarbwelProducts(q: string = "", page: string = "1", category: string = "") {
   try {
-    const baseUrl = "https://carbwel.vercel.app";
-    // Adicionamos o parâmetro &category na montagem da URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://carbwel.vercel.app";
     const url = `${baseUrl}/api/ml/products?q=${encodeURIComponent(q)}&page=${page}&category=${category}`;
 
     const res = await fetch(url, {
@@ -23,15 +22,9 @@ async function getCarbwelProducts(q: string = "", page: string = "1", category: 
 
     const data = await res.json();
 
-    const totalItems = 
-      data.paging?.total || 
-      data.total || 
-      data.paging?.primary_results || 
-      (Array.isArray(data) ? data.length : 0);
-
     return { 
-      products: data.results || data.products || (Array.isArray(data) ? data : []), 
-      total: totalItems 
+      products: data.results || [], 
+      total: data.total || 0 
     };
   } catch (error) {
     console.error("Erro na ponte da API:", error);
@@ -39,14 +32,15 @@ async function getCarbwelProducts(q: string = "", page: string = "1", category: 
   }
 }
 
-// 2. Componente de Página Principal corrigido
-export default async function Home(props: { searchParams: Promise<{ q?: string; page?: string; category?: string }> }) {
+// 2. Componente de Página Principal
+export default async function Home(props: { 
+  searchParams: Promise<{ q?: string; page?: string; category?: string }> 
+}) {
   const params = await props.searchParams;
   const query = params?.q || "";
-  const category = params?.category || ""; // NOVO: Captura o ID da categoria da URL
+  const category = params?.category || "";
   const pageStr = params?.page || "1";
   
-  // Passamos o category para a função de busca
   const { products, total } = await getCarbwelProducts(query, pageStr, category);
   
   const currentPage = Math.max(1, parseInt(pageStr) || 1);
@@ -56,7 +50,6 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
   const startItem = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, total);
 
-  // Helper para manter os filtros nos links de paginação
   const getPaginationUrl = (newPage: number) => {
     const searchParams = new URLSearchParams();
     if (query) searchParams.set('q', query);
@@ -71,7 +64,6 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
       <Header />
       <CategoryNav />
       
-      {/* O carrossel só aparece na home limpa */}
       {!query && !category && currentPage === 1 && <HeroCarousel />}
       
       <main className="mx-auto max-w-7xl px-4 py-10">
@@ -102,57 +94,74 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
               <div className="mt-20 border-t border-neutral-100 pt-12 flex flex-col items-center gap-8">
                 <div className="flex items-center gap-3">
                   {currentPage > 1 ? (
-                    <Link 
-                      href={getPaginationUrl(currentPage - 1)}
-                      className="group flex items-center gap-2 px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-2xl font-black text-xs uppercase hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                    >
-                      <span>←</span> Anterior
-                    </Link>
-                  ) : (
-                    <div className="px-6 py-3 border-2 border-neutral-100 text-neutral-300 rounded-2xl font-black text-xs uppercase cursor-not-allowed">
+                    <Link href={getPaginationUrl(currentPage - 1)} className="px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-2xl font-black text-xs uppercase hover:bg-blue-600 hover:text-white transition-all">
                       ← Anterior
-                    </div>
-                  )}
+                    </Link>
+                  ) : null}
 
-                  <div className="flex items-center gap-2 bg-neutral-50 p-1.5 rounded-2xl border border-neutral-100 shadow-inner">
-                    <span className="w-10 h-10 flex items-center justify-center bg-white text-blue-700 rounded-xl shadow-sm font-black text-sm border border-neutral-100">
+                  <div className="flex items-center gap-2 bg-neutral-50 p-1.5 rounded-2xl border border-neutral-100">
+                    <span className="w-10 h-10 flex items-center justify-center bg-white text-blue-700 rounded-xl font-black text-sm border border-neutral-100 shadow-sm">
                       {currentPage}
                     </span>
-                    <span className="px-2 text-neutral-400 font-bold text-[10px] uppercase tracking-tighter">de</span>
+                    <span className="px-2 text-neutral-400 font-bold text-[10px] uppercase">de</span>
                     <span className="w-12 h-10 flex items-center justify-center text-neutral-600 font-black text-sm">
-                      {totalPages.toLocaleString('pt-BR')}
+                      {totalPages}
                     </span>
                   </div>
 
                   {currentPage < totalPages ? (
-                    <Link 
-                      href={getPaginationUrl(currentPage + 1)}
-                      className="group flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase hover:bg-neutral-900 transition-all shadow-xl shadow-blue-100"
-                    >
-                      Próxima <span>→</span>
-                    </Link>
-                  ) : (
-                    <div className="px-6 py-3 border-2 border-neutral-100 text-neutral-300 rounded-2xl font-black text-xs uppercase cursor-not-allowed">
+                    <Link href={getPaginationUrl(currentPage + 1)} className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase hover:bg-neutral-900 transition-all shadow-xl shadow-blue-100">
                       Próxima →
-                    </div>
-                  )}
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             )}
           </>
         ) : (
           <div className="text-center py-24 border-2 border-dashed border-neutral-100 rounded-[40px] bg-neutral-50/50">
-            <p className="text-neutral-400 font-bold text-lg mb-4">Nenhum produto encontrado nesta categoria.</p>
-            <Link href="/" className="bg-white border border-neutral-200 px-8 py-3 rounded-full text-blue-600 font-black text-xs uppercase shadow-sm hover:shadow-md transition-all">
-              Limpar filtros e ver tudo
+            <p className="text-neutral-400 font-bold text-lg mb-4">Nenhum produto encontrado.</p>
+            <Link href="/" className="bg-white border border-neutral-200 px-8 py-3 rounded-full text-blue-600 font-black text-xs uppercase">
+              Limpar filtros
             </Link>
           </div>
         )}
       </main>
-
       <Footer />
     </div>
   );
 }
 
-// Componentes ProductCard e Footer permanecem os mesmos...
+// 3. Componente Card (Interno para evitar erro de importação)
+function ProductCard({ product }: { product: any }) {
+  const imageUrl = product.thumbnail?.replace("-I.jpg", "-W.jpg") || "/placeholder.png";
+  return (
+    <div className="group border border-neutral-100 p-5 rounded-[32px] shadow-sm hover:shadow-2xl transition-all bg-white flex flex-col justify-between h-full">
+      <div>
+        <div className="aspect-square relative mb-5 overflow-hidden rounded-[24px] bg-neutral-50 flex items-center justify-center p-6">
+          <img src={imageUrl} alt={product.title} className="object-contain max-h-full group-hover:scale-110 transition-transform duration-500" />
+        </div>
+        <h3 className="text-[13px] font-bold text-neutral-700 uppercase line-clamp-2 h-10 mb-3 leading-tight">{product.title}</h3>
+        <p className="text-2xl font-black text-blue-700 tracking-tighter">
+          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+        </p>
+      </div>
+      <a href={product.permalink} target="_blank" rel="noopener noreferrer" className="mt-8 block text-center bg-blue-600 text-white py-4 rounded-2xl font-black text-[11px] uppercase hover:bg-neutral-900 transition-all">
+        Comprar no Mercado Livre
+      </a>
+    </div>
+  );
+}
+
+// 4. Rodapé
+function Footer() {
+  return (
+    <footer className="w-full bg-white border-t border-neutral-200 pt-12 pb-8 mt-auto">
+      <div className="mx-auto max-w-7xl px-4 text-center">
+        <p className="text-neutral-400 text-[10px] uppercase font-black">
+          © {new Date().getFullYear()} Carbwel Auto Peças - Todos os direitos reservados.
+        </p>
+      </div>
+    </footer>
+  );
+}
