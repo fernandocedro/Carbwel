@@ -10,7 +10,7 @@ export const menu: MenuItem[] = [
     slug: "Carburador",
     children: [
       { label: "Carburadores", slug: "Carburador" },
-      { label: "Kits de Reparo", slug: "Reparo" },
+      { label: "Kits de Reparo", slug: "kit+Reparo" },
       { label: "Componentes", slug: "Agulha Boia Gicle" },
     ],
   },
