@@ -6,6 +6,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q') || '';
   const page = parseInt(searchParams.get('page') || '1');
+  
+  // O Mercado Livre usa 'offset' para paginação (Página 1 = 0, Página 2 = 20...)
   const limit = 20;
   const offset = (page - 1) * limit;
 
@@ -13,52 +15,55 @@ export async function GET(request: Request) {
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
 
   try {
-    // 1. TENTATIVA A: Busca por Palavra-Chave (A mais comum)
-    // Adicionamos "*" no final da palavra para ele buscar variações (ex: Amortecedor*)
-    const cleanQ = q.trim().replace(/\s+/g, " ");
-    const searchUrl = `https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active&offset=${offset}&limit=${limit}${cleanQ ? `&q=${encodeURIComponent(cleanQ)}` : ''}`;
+    // ROTA MESTRA: Esta é a mesma rota que o site do Mercado Livre usa.
+    // Ela tem "Fuzzy Search" (entende pastilhas vs pastilha)
+    let url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&offset=${offset}&limit=${limit}`;
 
-    const res = await fetch(searchUrl, {
+    if (q.trim() !== "") {
+      url += `&q=${encodeURIComponent(q.trim())}`;
+    }
+
+    const res = await fetch(url, {
       cache: 'no-store',
-      headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
     });
 
-    let searchData = await res.json();
-    let itemIds = searchData.results || [];
+    const data = await res.json();
 
-    // 2. TENTATIVA B: Se não veio nada, tentamos quebrar a frase (Filtro Freio -> Filtro)
-    if (itemIds.length === 0 && cleanQ.includes(" ")) {
-        const firstWord = cleanQ.split(" ")[0];
-        const resB = await fetch(`https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active&q=${encodeURIComponent(firstWord)}&offset=${offset}&limit=${limit}`, {
-            headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
-        });
-        const dataB = await resB.json();
-        itemIds = dataB.results || [];
-        searchData.paging = dataB.paging;
+    // Se a rota pública não retornar nada (por bloqueio de token), 
+    // ela tentará o fallback automático para a rota de admin
+    if (!data.results || data.results.length === 0) {
+       return await fallbackAdminSearch(q, offset, limit, SELLER_ID, ACCESS_TOKEN);
     }
-
-    if (itemIds.length === 0) {
-      return NextResponse.json({ results: [], total: 0 });
-    }
-
-    // 3. BUSCA DETALHES (Preço, Título, Fotos)
-    const idsString = itemIds.join(',');
-    const itemsRes = await fetch(`https://api.mercadolibre.com/items?ids=${idsString}`, {
-       headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
-    });
-
-    const itemsData = await itemsRes.json();
-    const finalProducts = itemsData
-      .filter((item: any) => item.code === 200)
-      .map((item: any) => item.body);
 
     return NextResponse.json({
-      results: finalProducts,
-      total: searchData.paging?.total || 0
+      results: data.results, // Aqui já vem o produto completo (foto, preço, título)
+      total: data.paging?.total || 0
     });
 
   } catch (error) {
-    console.error("Erro API:", error);
+    console.error("Erro na busca avançada:", error);
     return NextResponse.json({ results: [], total: 0 }, { status: 500 });
   }
+}
+
+// Função de segurança caso a primeira falhe
+async function fallbackAdminSearch(q: string, offset: number, limit: number, sellerId: string, token: any) {
+    const url = `https://api.mercadolibre.com/users/${sellerId}/items/search?status=active&q=${encodeURIComponent(q)}&offset=${offset}&limit=${limit}`;
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const searchData = await res.json();
+    const ids = searchData.results || [];
+    
+    if (ids.length === 0) return NextResponse.json({ results: [], total: 0 });
+
+    const itemsRes = await fetch(`https://api.mercadolibre.com/items?ids=${ids.join(',')}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const itemsData = await itemsRes.json();
+    const finalProducts = itemsData.filter((i: any) => i.code === 200).map((i: any) => i.body);
+
+    return NextResponse.json({ results: finalProducts, total: searchData.paging?.total || 0 });
 }
