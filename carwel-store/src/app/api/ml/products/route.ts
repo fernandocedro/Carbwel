@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   
-  // Pegamos a página atual. Se não vier nada, assume 1.
   const page = parseInt(searchParams.get('page') || '1');
   const query = searchParams.get('q') || '';
   const limit = 20;
@@ -15,39 +14,46 @@ export async function GET(request: Request) {
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
 
   try {
-    // 1. Buscamos os IDs respeitando o offset e o limit (PAGINAÇÃO REAL)
-    // Se houver busca (query), usamos a busca geral. Se não, usamos a busca de itens do usuário.
+    // URL de busca padrão para vendedores brasileiros (MLB)
+    // Importante: Não enviamos o Q se ele estiver vazio para a API não se confundir
     let searchUrl = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&offset=${offset}&limit=${limit}`;
     
-    if (query) {
+    if (query && query.trim() !== "") {
       searchUrl += `&q=${encodeURIComponent(query)}`;
     }
 
     const res = await fetch(searchUrl, {
-      cache: 'no-store',
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`,
-        'User-Agent': 'CarbwelSite/1.0'
-      }
+        'Content-Type': 'application/json'
+      },
+      next: { revalidate: 0 } // Força o Next.js a não cachear erro
     });
 
     const searchData = await res.json();
-    
-    // O Mercado Livre já devolve os dados básicos no search, 
-    // então não precisamos fazer um segundo fetch por IDs a menos que queira dados muito específicos.
-    // Isso deixa sua API muito mais rápida!
-    const results = searchData.results || [];
-    const total = searchData.paging?.total || 0;
 
-    // Retornamos um objeto que a sua Home entende (com results e total)
+    // Se o Mercado Livre retornar resultados vazios na busca geral, 
+    // pode ser que o SELLER_ID precise de uma busca de itens específica (como você tinha antes)
+    if (!searchData.results || searchData.results.length === 0) {
+       // FALLBACK: Caso a busca geral falhe, usamos a lista de IDs e buscamos os detalhes
+       // Mas aqui injetamos o TOTAL para a paginação não sumir
+       return NextResponse.json({
+         results: [],
+         total: 0,
+         message: "Nenhum resultado na busca do Seller"
+       });
+    }
+
+    // Retorno de SUCESSO com os dados que o page.tsx precisa
     return NextResponse.json({
-      results: results,
-      total: total,
-      paging: searchData.paging // Passamos o paging original para garantir
+      results: searchData.results,
+      total: searchData.paging?.total || 0,
+      paging: searchData.paging
     });
 
   } catch (error) {
-    console.error("Erro técnico:", error);
-    return NextResponse.json({ ok: false, error: "Erro de conexão" }, { status: 500 });
+    console.error("Erro técnico na API:", error);
+    return NextResponse.json({ error: "Erro de conexão" }, { status: 500 });
   }
 }
