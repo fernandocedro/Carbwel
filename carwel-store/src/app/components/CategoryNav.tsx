@@ -3,18 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, MenuIcon } from "./icons";
 import { menu } from "./data";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-// Hook para detectar Desktop com segurança (evita erros de Hydration no Next.js)
+// Hook para detectar Desktop com segurança
 function useIsDesktop(breakpoint = 768) {
   const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-
     const mq = window.matchMedia(`(min-width: ${breakpoint + 1}px)`);
     const update = () => setIsDesktop(mq.matches);
-    
     update();
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
@@ -29,7 +26,6 @@ export default function CategoryNav() {
   const [allOpen, setAllOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Fecha menus ao clicar fora do componente
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
@@ -49,26 +45,25 @@ export default function CategoryNav() {
   };
 
   /**
-   * FORMATAÇÃO DE QUERY:
-   * Otimizado para o motor de busca do Mercado Livre. 
-   * Removemos caracteres especiais e preposições que podem "sujar" a busca.
+   * LÓGICA DE NAVEGAÇÃO ASSERTIVA:
+   * Se houver categoryId, navegamos pelo ID (traz 100% dos itens).
+   * Se não, limpamos o texto para uma busca por query.
    */
-  const formatQuery = (label: string) => {
-    if (!label) return "";
-    return label
-      .replace(/\//g, " ")       // Troca barras por espaços
-      .replace(/[^a-zA-Z0-9À-ÿ\s]/g, "") // Remove caracteres especiais
-      .replace(/\b(de|para|com|e|o|a)\b/gi, "") // Remove preposições
-      .replace(/\s+/g, " ")      // Remove espaços duplos
-      .trim();
-  };
-
-  const handleSearch = (label: string) => {
-    const q = formatQuery(label);
-    if (!q) return;
+  const handleSearch = (label: string, categoryId?: string) => {
     closeMenus();
-    // Navega para a home com a query e reseta para a página 1 automaticamente
-    router.push(`/?q=${encodeURIComponent(q)}`, { scroll: true });
+    
+    if (categoryId) {
+      // Navegação por ID técnico (Pasta exata do ML)
+      router.push(`/?category=${categoryId}`, { scroll: true });
+    } else {
+      // Fallback para busca por texto limpo
+      const q = label
+        .replace(/\//g, " ")
+        .replace(/[^a-zA-Z0-9À-ÿ\s]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      router.push(`/?q=${encodeURIComponent(q)}`, { scroll: true });
+    }
   };
 
   return (
@@ -87,7 +82,7 @@ export default function CategoryNav() {
               <button
                 type="button"
                 className="flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-blue-600 transition-colors uppercase tracking-tight"
-                onClick={() => handleSearch(it.label)}
+                onClick={() => handleSearch(it.label, it.categoryId)}
               >
                 {it.label}
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${openIndex === idx ? 'rotate-180' : ''}`} />
@@ -99,7 +94,7 @@ export default function CategoryNav() {
                   {it.children.map((c: any) => (
                     <button
                       key={c.label}
-                      onClick={() => handleSearch(c.label)}
+                      onClick={() => handleSearch(c.label, c.categoryId)}
                       className="block w-full text-left rounded-lg px-3 py-2 text-[13px] text-neutral-600 hover:bg-blue-50 hover:text-blue-700 transition-all"
                     >
                       {c.label}
@@ -130,7 +125,7 @@ export default function CategoryNav() {
               {items.map((it) => (
                 <div key={it.label} className="space-y-4">
                   <button 
-                    onClick={() => handleSearch(it.label)}
+                    onClick={() => handleSearch(it.label, it.categoryId)}
                     className="text-[12px] font-black text-blue-900 hover:text-red-600 uppercase text-left w-full border-b border-neutral-100 pb-2 transition-colors"
                   >
                     {it.label}
@@ -139,7 +134,7 @@ export default function CategoryNav() {
                     {it.children?.map((c: any) => (
                       <button
                         key={c.label}
-                        onClick={() => handleSearch(c.label)}
+                        onClick={() => handleSearch(c.label, c.categoryId)}
                         className="text-[12px] text-left text-neutral-500 hover:text-blue-600 transition-colors"
                       >
                         {c.label}
