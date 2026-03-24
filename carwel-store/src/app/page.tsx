@@ -6,7 +6,6 @@ import Header from "./components/Header";
 import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
-import { Facebook, Instagram } from "lucide-react"; // Se não tiver lucide-react, pode remover os ícones ou usar imagens
 
 // 1. Função de Busca que consome a SUA API interna
 async function getCarbwelProducts(q: string = "", page: string = "1") {
@@ -171,16 +170,14 @@ function ProductCard({ product }: { product: any }) {
   );
 }
 
-// 4. Componente Rodapé (Footer)
+// 4. Componente Rodapé (Footer) - SVG inline para evitar erro de pacotes faltando
 function Footer() {
   return (
-    <footer className="w-full bg-white border-t border-neutral-200 pt-12 pb-8 relative">
-      {/* Barra Vermelha no Topo */}
+    <footer className="w-full bg-white border-t border-neutral-200 pt-12 pb-8 relative mt-auto">
       <div className="h-2 bg-[#E31D1A] w-full absolute top-0 left-0"></div>
 
       <div className="mx-auto max-w-7xl px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pt-4">
         
-        {/* Institucional */}
         <div>
           <h3 className="font-black text-neutral-800 text-sm uppercase mb-6 tracking-wider">Institucional</h3>
           <ul className="flex flex-col gap-3 text-neutral-500 text-xs font-bold">
@@ -191,7 +188,6 @@ function Footer() {
           </ul>
         </div>
 
-        {/* Dados da Empresa */}
         <div>
           <h3 className="font-black text-neutral-800 text-sm uppercase mb-6 tracking-wider">Carbwel Auto Peças</h3>
           <div className="text-neutral-500 text-xs leading-relaxed font-bold">
@@ -203,7 +199,6 @@ function Footer() {
           </div>
         </div>
 
-        {/* Pagamento e Social */}
         <div>
           <h3 className="font-black text-neutral-800 text-sm uppercase mb-6 tracking-wider">Formas de Pagamento</h3>
           <div className="flex flex-wrap gap-2 mb-8">
@@ -214,36 +209,33 @@ function Footer() {
 
           <h3 className="font-black text-neutral-800 text-sm uppercase mb-4 tracking-wider">Acompanhe:</h3>
           <div className="flex gap-4">
-            <a href="#" className="bg-[#004a8c] p-2 rounded-full text-white hover:scale-110 transition-transform">
-               <Facebook size={18} fill="white" />
+            <a href="#" className="bg-[#004a8c] p-2 rounded-full text-white hover:scale-110 transition-transform flex items-center justify-center">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
             </a>
-            <a href="#" className="bg-[#004a8c] p-2 rounded-full text-white hover:scale-110 transition-transform">
-               <Instagram size={18} />
+            <a href="#" className="bg-[#004a8c] p-2 rounded-full text-white hover:scale-110 transition-transform flex items-center justify-center">
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
             </a>
           </div>
         </div>
 
-        {/* Widget Facebook Simulador */}
-        <div className="border border-neutral-200 rounded-lg overflow-hidden flex flex-col h-fit shadow-sm">
-          <div className="bg-white p-3 flex items-center gap-2 border-b">
-            <div className="w-8 h-8 bg-white border flex items-center justify-center font-black text-[8px] text-red-600">CARBWEL</div>
+        <div className="border border-neutral-200 rounded-lg overflow-hidden flex flex-col h-fit shadow-sm bg-white">
+          <div className="p-3 flex items-center gap-2 border-b">
+            <div className="w-8 h-8 bg-white border border-red-600 flex items-center justify-center font-black text-[7px] text-red-600 leading-none text-center p-0.5">CARBWEL AUTO PEÇAS</div>
             <div>
-              <p className="text-blue-700 font-bold text-[11px]">Carbwel Auto Peças</p>
+              <p className="text-blue-700 font-bold text-[10px] leading-tight">Carbwel Auto Peças</p>
               <div className="flex items-center gap-1">
-                <button className="bg-gray-100 border text-[9px] px-1 rounded flex items-center gap-1">f Seguir Página</button>
-                <span className="text-[9px] text-gray-400">1 mil seguidores</span>
+                <button className="bg-gray-100 border text-[8px] px-1 rounded font-bold">f Seguir Página</button>
+                <span className="text-[8px] text-gray-400">1 mil seguidores</span>
               </div>
             </div>
           </div>
           <div className="p-3 bg-neutral-50 text-[10px] text-neutral-600 font-medium">
-             <div className="flex items-center gap-1 mb-2">
-                <div className="w-4 h-4 bg-red-600 rounded-full"></div>
-                <span className="font-bold text-black">Carbwel Auto Peças</span>
-             </div>
-             <p>Esse curso é uma Parceria 🚀</p>
-             <p>CARBWEL</p>
-             <p>MAHLE</p>
-             <p>SENAI IPIRANGA</p>
+              <div className="flex items-center gap-1 mb-2">
+                 <div className="w-4 h-4 bg-red-600 rounded-full"></div>
+                 <span className="font-bold text-black text-[9px]">Carbwel Auto Peças</span>
+              </div>
+              <p>Esse curso é uma Parceria 🚀</p>
+              <p>CARBWEL - MAHLE - SENAI</p>
           </div>
         </div>
       </div>
