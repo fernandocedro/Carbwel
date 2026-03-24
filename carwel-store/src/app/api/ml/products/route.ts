@@ -13,21 +13,21 @@ export async function GET(request: Request) {
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
 
   try {
-    // --- LÓGICA DE TRATAMENTO DE BUSCA ---
-    let cleanQuery = rawQuery
-      .trim()
-      .toLowerCase()
-      .replace(/s\b/g, "") // Remove 's' no final (pastilhas -> pastilha)
-      .replace(/\b(de|para|com|e|o|a|os|as)\b/gi, "") // Remove preposições
-      .replace(/\s+/g, " ") // Remove espaços duplos
-      .trim();
-
-    // Se o usuário digitou algo, usamos a busca. Se não, listamos tudo.
     let url = `https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active&offset=${offset}&limit=${limit}`;
 
-    if (cleanQuery !== "") {
-      // DICA: Adicionar asterisco no final ajuda o ML a buscar por "começa com"
-      url += `&q=${encodeURIComponent(cleanQuery)}`;
+    if (rawQuery.trim() !== "") {
+      // LÓGICA MESTRA: 
+      // 1. Remove caracteres especiais
+      // 2. Remove preposições (de, para, com, etc)
+      // 3. Transforma em palavras soltas que o ML entende melhor
+      const cleanQ = rawQuery
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9\s]/g, "") // Remove tudo que não é letra ou número
+        .replace(/\b(de|para|com|e|o|a|os|as|do|da|dos|das|pro|pra|para)\b/gi, "")
+        .trim()
+        .replace(/\s+/g, " "); // Garante apenas um espaço entre as palavras
+
+      url += `&q=${encodeURIComponent(cleanQ)}`;
     }
 
     const res = await fetch(url, {
@@ -39,41 +39,41 @@ export async function GET(request: Request) {
     });
 
     const searchData = await res.json();
-    let itemIds = searchData.results || [];
+    const itemIds = searchData.results || [];
 
-    // SE NÃO ACHOU NADA COM A BUSCA TRATADA, TENTA A BUSCA ORIGINAL (Fallback)
-    if (itemIds.length === 0 && rawQuery !== "") {
-      const fallbackRes = await fetch(
-        `https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active&offset=${offset}&limit=${limit}&q=${encodeURIComponent(rawQuery)}`,
-        { headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` } }
-      );
-      const fallbackData = await fallbackRes.json();
-      itemIds = fallbackData.results || [];
+    // Se não trouxer nada, tentamos uma última vez apenas com a PRIMEIRA palavra da busca
+    // (Ex: Se "Bucha Barra Estabilizadora" falhar, busca apenas "Bucha")
+    if (itemIds.length === 0 && rawQuery.trim() !== "") {
+        const firstWord = rawQuery.trim().split(' ')[0];
+        const fallbackRes = await fetch(`${url.split('&q=')[0]}&q=${encodeURIComponent(firstWord)}`, {
+            headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+        });
+        const fallbackData = await fallbackRes.json();
+        const fallbackIds = fallbackData.results || [];
+        
+        if (fallbackIds.length > 0) {
+            return await fetchDetails(fallbackIds, fallbackData.paging?.total || 0, ACCESS_TOKEN);
+        }
     }
 
-    if (itemIds.length === 0) {
-      return NextResponse.json({ results: [], total: 0 });
-    }
-
-    // BUSCA DE DETALHES
-    const idsString = itemIds.join(',');
-    const itemsRes = await fetch(`https://api.mercadolibre.com/items?ids=${idsString}`, {
-       headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
-    });
-
-    const itemsData = await itemsRes.json();
-    
-    const finalProducts = itemsData
-      .filter((item: any) => item.code === 200)
-      .map((item: any) => item.body);
-
-    return NextResponse.json({
-      results: finalProducts,
-      total: searchData.paging?.total || 0
-    });
+    return await fetchDetails(itemIds, searchData.paging?.total || 0, ACCESS_TOKEN);
 
   } catch (error) {
-    console.error("Erro na API Carbwel:", error);
+    console.error("Erro na busca Carbwel:", error);
     return NextResponse.json({ results: [], total: 0 }, { status: 500 });
   }
+}
+
+// Função auxiliar para buscar os detalhes (preço, foto, etc)
+async function fetchDetails(itemIds: string[], total: number, token: any) {
+    if (itemIds.length === 0) return NextResponse.json({ results: [], total: 0 });
+    
+    const idsString = itemIds.slice(0, 20).join(',');
+    const itemsRes = await fetch(`https://api.mercadolibre.com/items?ids=${idsString}`, {
+       headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const itemsData = await itemsRes.json();
+    const finalProducts = itemsData.filter((i: any) => i.code === 200).map((i: any) => i.body);
+    
+    return NextResponse.json({ results: finalProducts, total });
 }
