@@ -10,8 +10,9 @@ export const menu: MenuItem[] = [
     slug: "Carburador",
     children: [
       { label: "Carburadores", slug: "Carburador" },
-      { label: "Kits de Reparo", slug: "kit" },
-      { label: "Componentes", slug: "Agulha Boia Gicle" },
+      { label: "Kits de Reparo", slug: "Reparo" }, // "Reparo" costuma trazer agulhas e juntas juntas
+      { label: "Válvulas e Boias", slug: "Valvula" }, // Teste 'Valvula' em vez de 'Agulha'
+      { label: "Componentes", slug: "Kit" }, // 'Kit' é o termo mais forte da sua API
     ],
   },
   {
@@ -19,8 +20,8 @@ export const menu: MenuItem[] = [
     slug: "Injecao",
     children: [
       { label: "Bicos Injetores", slug: "Bico Injetor" },
+      { label: "Bombas Elétricas", slug: "Bomba" },
       { label: "Sensores", slug: "Sensor" },
-      { label: "Bombas Elétricas", slug: "Bomba Eletrica" },
     ],
   },
   {
@@ -28,8 +29,7 @@ export const menu: MenuItem[] = [
     slug: "Ignicao",
     children: [
       { label: "Bobinas", slug: "Bobina" },
-      { label: "Cabos de Vela", slug: "Cabo Vela" },
-      { label: "Velas", slug: "Vela" },
+      { label: "Cabos e Velas", slug: "Cabo" }, // 'Cabo' traz o conjunto completo
     ],
   },
   {
@@ -37,16 +37,7 @@ export const menu: MenuItem[] = [
     slug: "Filtro",
     children: [
       { label: "Filtros de Ar", slug: "Filtro Ar" },
-      { label: "Filtros de Combustível", slug: "Filtro Combustivel" },
-      { label: "Filtros de Óleo", slug: "Filtro Oleo" },
-    ],
-  },
-  {
-    label: "Acessórios",
-    slug: "Acessorio",
-    children: [
-      { label: "Engates de Reboque", slug: "Engate" },
-      { label: "Irrigação e Jardim", slug: "Irrigacao" },
+      { label: "Filtros de Combustível", slug: "Filtro" },
     ],
   },
 ];
