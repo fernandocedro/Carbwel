@@ -1,8 +1,7 @@
 export type MenuItem = {
   label: string;
   slug?: string;
-  categoryId?: string;
-  children?: { label: string; slug: string; categoryId?: string }[];
+  children?: { label: string; slug: string }[];
 };
 
 export const menu: MenuItem[] = [
@@ -11,20 +10,17 @@ export const menu: MenuItem[] = [
     slug: "Carburador",
     children: [
       { label: "Carburadores", slug: "Carburador" },
-      { label: "Kits de Reparo", slug: "Kit Reparo" },
-      { label: "Boias de Carburador", slug: "Boia" },
-      { label: "Válvulas de Agulha", slug: "Valvula Agulha" },
-      { label: "Giclês", slug: "Gicle" },
+      { label: "Kits de Reparo", slug: "Reparo" },
+      { label: "Componentes", slug: "Agulha Boia Gicle" },
     ],
   },
   {
-    label: "Injeção Eletrônica",
+    label: "Injeção",
     slug: "Injecao",
     children: [
       { label: "Bicos Injetores", slug: "Bico Injetor" },
       { label: "Sensores", slug: "Sensor" },
-      { label: "Sondas Lambda", slug: "Sonda Lambda" },
-      { label: "Módulos de Injeção", slug: "Modulo" },
+      { label: "Bombas Elétricas", slug: "Bomba Eletrica" },
     ],
   },
   {
@@ -33,33 +29,21 @@ export const menu: MenuItem[] = [
     children: [
       { label: "Bobinas", slug: "Bobina" },
       { label: "Cabos de Vela", slug: "Cabo Vela" },
-      { label: "Velas de Ignição", slug: "Vela" },
-      { label: "Distribuidores", slug: "Distribuidor" },
+      { label: "Velas", slug: "Vela" },
     ],
   },
   {
-    label: "Filtros e Bombas",
+    label: "Filtros",
     slug: "Filtro",
     children: [
       { label: "Filtros de Ar", slug: "Filtro Ar" },
       { label: "Filtros de Combustível", slug: "Filtro Combustivel" },
-      { label: "Bombas de Combustível", slug: "Bomba Combustivel" },
-      { label: "Bombas de Água", slug: "Bomba Agua" },
-    ],
-  },
-  {
-    label: "Motor",
-    slug: "Junta",
-    children: [
-      { label: "Jogos de Juntas", slug: "Junta" },
-      { label: "Correias", slug: "Correia" },
-      { label: "Coxins", slug: "Coxin" },
-      { label: "Retentores", slug: "Retentor" },
+      { label: "Filtros de Óleo", slug: "Filtro Oleo" },
     ],
   },
   {
     label: "Acessórios",
-    slug: "Engate",
+    slug: "Acessorio",
     children: [
       { label: "Engates de Reboque", slug: "Engate" },
       { label: "Irrigação e Jardim", slug: "Irrigacao" },
