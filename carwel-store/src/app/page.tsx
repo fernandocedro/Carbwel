@@ -10,7 +10,6 @@ import Link from "next/link";
 // 1. Função de Busca que consome a SUA API interna
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   try {
-    // Definimos a URL da sua API (em produção usamos o domínio fixo para garantir)
     const baseUrl = "https://carbwel.vercel.app";
     const url = `${baseUrl}/api/ml/products?q=${encodeURIComponent(q)}&page=${page}`;
 
@@ -23,7 +22,6 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
 
     const data = await res.json();
 
-    // Ajuste de mapeamento: verificamos se os dados estão em .results ou se a API manda o array direto
     return { 
       products: data.results || data.products || (Array.isArray(data) ? data : []), 
       total: data.paging?.total || data.total || (Array.isArray(data) ? data.length : 0) 
@@ -43,7 +41,12 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
   const { products, total } = await getCarbwelProducts(query, pageStr);
   
   const currentPage = Math.max(1, parseInt(pageStr) || 1);
-  const totalPages = Math.ceil(total / 20);
+  const itemsPerPage = 20;
+  const totalPages = Math.ceil(total / itemsPerPage);
+
+  // Cálculos para o contador de produtos
+  const startItem = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, total);
 
   return (
     <div className="min-h-screen bg-white">
@@ -59,40 +62,77 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
             <h2 className="text-2xl font-bold text-neutral-800 uppercase">
               {query ? `Busca: ${query}` : "Peças em Destaque"}
             </h2>
-            <p className="text-blue-600 font-bold">{total.toLocaleString('pt-BR')} anúncios</p>
+            <p className="text-blue-600 font-bold">{total.toLocaleString('pt-BR')} anúncios encontrados</p>
           </div>
         </div>
 
         {products && products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product: any) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {products.map((product: any) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {/* SEÇÃO DE PAGINAÇÃO APRIMORADA */}
+            <div className="mt-16 border-t pt-10 flex flex-col items-center gap-6">
+              {/* Contador de Itens */}
+              <div className="text-sm text-neutral-500 font-medium">
+                Mostrando <span className="text-neutral-900 font-bold">{startItem}</span> a{" "}
+                <span className="text-neutral-900 font-bold">{endItem}</span> de{" "}
+                <span className="text-blue-600 font-bold">{total.toLocaleString('pt-BR')}</span> produtos
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  {/* Botão Anterior */}
+                  {currentPage > 1 ? (
+                    <Link 
+                      href={`/?q=${encodeURIComponent(query)}&page=${currentPage - 1}`}
+                      className="px-5 py-2.5 border-2 border-blue-600 text-blue-600 rounded-xl font-black text-[10px] uppercase hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                    >
+                      ← Anterior
+                    </Link>
+                  ) : (
+                    <div className="px-5 py-2.5 border-2 border-neutral-100 text-neutral-300 rounded-xl font-black text-[10px] uppercase cursor-not-allowed">
+                      ← Anterior
+                    </div>
+                  )}
+
+                  {/* Indicador de Páginas */}
+                  <div className="flex items-center gap-1 bg-neutral-100 p-1 rounded-xl">
+                    <span className="px-4 py-2 bg-white text-blue-700 rounded-lg shadow-sm font-black text-sm">
+                      {currentPage}
+                    </span>
+                    <span className="px-2 text-neutral-400 font-bold text-xs uppercase tracking-tighter">de</span>
+                    <span className="px-4 py-2 text-neutral-600 font-black text-sm">
+                      {totalPages}
+                    </span>
+                  </div>
+
+                  {/* Botão Próxima */}
+                  {currentPage < totalPages ? (
+                    <Link 
+                      href={`/?q=${encodeURIComponent(query)}&page=${currentPage + 1}`}
+                      className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase hover:bg-neutral-900 transition-all shadow-lg shadow-blue-100"
+                    >
+                      Próxima →
+                    </Link>
+                  ) : (
+                    <div className="px-5 py-2.5 border-2 border-neutral-100 text-neutral-300 rounded-xl font-black text-[10px] uppercase cursor-not-allowed">
+                      Próxima →
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
         ) : (
           <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-neutral-50">
             <p className="text-neutral-400 font-medium text-lg">Nenhum produto encontrado.</p>
-            <Link href="/" className="text-blue-600 font-bold mt-4 inline-block">
+            <Link href="/" className="text-blue-600 font-bold mt-4 inline-block hover:underline">
               Ver todos os produtos
             </Link>
-          </div>
-        )}
-
-        {totalPages > 1 && (
-          <div className="mt-16 flex justify-center items-center gap-4">
-            {currentPage > 1 && (
-              <Link href={`/?q=${encodeURIComponent(query)}&page=${currentPage - 1}`} className="px-6 py-2 border-2 border-blue-600 text-blue-600 rounded-xl font-bold hover:bg-blue-600 hover:text-white transition-all">
-                Anterior
-              </Link>
-            )}
-            <div className="bg-neutral-100 px-4 py-2 rounded-lg font-bold text-neutral-600">
-              {currentPage} / {totalPages}
-            </div>
-            {currentPage < totalPages && (
-              <Link href={`/?q=${encodeURIComponent(query)}&page=${currentPage + 1}`} className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-neutral-900 transition-all">
-                Próxima
-              </Link>
-            )}
           </div>
         )}
       </main>
