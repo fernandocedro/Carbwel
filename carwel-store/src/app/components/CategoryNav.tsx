@@ -51,14 +51,14 @@ export default function CategoryNav() {
   /**
    * FORMATAÇÃO DE QUERY:
    * Otimizado para o motor de busca do Mercado Livre. 
-   * Removemos caracteres especiais e preposições que podem "sujar" a busca do vendedor.
+   * Removemos caracteres especiais e preposições que podem "sujar" a busca.
    */
   const formatQuery = (label: string) => {
     if (!label) return "";
     return label
       .replace(/\//g, " ")       // Troca barras por espaços
-      .replace(/[^a-zA-Z0-9À-ÿ\s]/g, "") // Remove caracteres especiais como () ou -
-      .replace(/\b(de|para|com|e|o|a)\b/gi, "") // Remove preposições comuns
+      .replace(/[^a-zA-Z0-9À-ÿ\s]/g, "") // Remove caracteres especiais
+      .replace(/\b(de|para|com|e|o|a)\b/gi, "") // Remove preposições
       .replace(/\s+/g, " ")      // Remove espaços duplos
       .trim();
   };
@@ -67,7 +67,7 @@ export default function CategoryNav() {
     const q = formatQuery(label);
     if (!q) return;
     closeMenus();
-    // No Next 15, garantimos que a busca resete o scroll para o topo
+    // Navega para a home com a query e reseta para a página 1 automaticamente
     router.push(`/?q=${encodeURIComponent(q)}`, { scroll: true });
   };
 
@@ -93,18 +93,17 @@ export default function CategoryNav() {
                 <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${openIndex === idx ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Dropdown Individual ao passar o mouse */}
+              {/* Dropdown Individual */}
               {openIndex === idx && it.children && it.children.length > 0 && (
                 <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
                   {it.children.map((c: any) => (
-                    <Link
+                    <button
                       key={c.label}
-                      href={`/?q=${encodeURIComponent(formatQuery(c.label))}`}
-                      onClick={closeMenus}
-                      className="block rounded-lg px-3 py-2 text-[13px] text-neutral-600 hover:bg-blue-50 hover:text-blue-700 transition-all"
+                      onClick={() => handleSearch(c.label)}
+                      className="block w-full text-left rounded-lg px-3 py-2 text-[13px] text-neutral-600 hover:bg-blue-50 hover:text-blue-700 transition-all"
                     >
                       {c.label}
-                    </Link>
+                    </button>
                   ))}
                 </div>
               )}
@@ -123,7 +122,7 @@ export default function CategoryNav() {
         </button>
       </div>
 
-      {/* Painel Full de Categorias (Mega Menu) */}
+      {/* Mega Menu */}
       {allOpen && (
         <div className="absolute left-0 right-0 z-50 bg-white border-b shadow-2xl animate-in slide-in-from-top-2 duration-300">
           <div className="mx-auto max-w-7xl p-8">
@@ -138,14 +137,13 @@ export default function CategoryNav() {
                   </button>
                   <div className="flex flex-col gap-2">
                     {it.children?.map((c: any) => (
-                      <Link
+                      <button
                         key={c.label}
-                        href={`/?q=${encodeURIComponent(formatQuery(c.label))}`}
-                        onClick={closeMenus}
-                        className="text-[12px] text-neutral-500 hover:text-blue-600 transition-colors"
+                        onClick={() => handleSearch(c.label)}
+                        className="text-[12px] text-left text-neutral-500 hover:text-blue-600 transition-colors"
                       >
                         {c.label}
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 </div>
