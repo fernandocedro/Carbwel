@@ -11,6 +11,7 @@ import Link from "next/link";
 async function getCarbwelProducts(q: string = "", page: string = "1") {
   try {
     const baseUrl = "https://carbwel.vercel.app";
+    // Passamos o 'page' para a sua API para que ela faça o cálculo do offset do Mercado Livre
     const url = `${baseUrl}/api/ml/products?q=${encodeURIComponent(q)}&page=${page}`;
 
     const res = await fetch(url, {
@@ -22,6 +23,7 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
 
     const data = await res.json();
 
+    // Mapeamento flexível para aceitar diferentes formatos de retorno da API
     return { 
       products: data.results || data.products || (Array.isArray(data) ? data : []), 
       total: data.paging?.total || data.total || (Array.isArray(data) ? data.length : 0) 
@@ -32,19 +34,20 @@ async function getCarbwelProducts(q: string = "", page: string = "1") {
   }
 }
 
-// 2. Componente de Página
+// 2. Componente de Página Principal
 export default async function Home(props: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const params = await props.searchParams;
   const query = params?.q || "";
   const pageStr = params?.page || "1";
   
+  // Chamada dos dados reais
   const { products, total } = await getCarbwelProducts(query, pageStr);
   
   const currentPage = Math.max(1, parseInt(pageStr) || 1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 20; // Padrão do Mercado Livre
   const totalPages = Math.ceil(total / itemsPerPage);
 
-  // Cálculos para o contador de produtos
+  // Lógica para o contador numérico (ex: Mostrando 1-20 de 150)
   const startItem = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, total);
 
@@ -54,18 +57,28 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
       <Header />
       <CategoryNav />
       
+      {/* O carrossel só aparece se não houver busca e estivermos na página 1 */}
       {!query && currentPage === 1 && <HeroCarousel />}
       
       <main className="mx-auto max-w-7xl px-4 py-10">
-        <div className="mb-8 border-b pb-4 flex justify-between items-end">
+        {/* Cabeçalho da Listagem */}
+        <div className="mb-8 border-b border-neutral-100 pb-4 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-neutral-800 uppercase">
+            <h2 className="text-2xl font-black text-neutral-800 uppercase tracking-tight">
               {query ? `Busca: ${query}` : "Peças em Destaque"}
             </h2>
-            <p className="text-blue-600 font-bold">{total.toLocaleString('pt-BR')} anúncios encontrados</p>
+            <p className="text-blue-600 font-bold text-sm">
+               {total.toLocaleString('pt-BR')} anúncios encontrados
+            </p>
+          </div>
+          
+          {/* Contador numérico de exibição */}
+          <div className="text-[11px] uppercase font-black text-neutral-400 tracking-widest bg-neutral-50 px-3 py-1 rounded-full">
+            Mostrando {startItem} — {endItem}
           </div>
         </div>
 
+        {/* Grid de Produtos */}
         {products && products.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -74,64 +87,64 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
               ))}
             </div>
 
-            {/* SEÇÃO DE PAGINAÇÃO APRIMORADA */}
-            <div className="mt-16 border-t pt-10 flex flex-col items-center gap-6">
-              {/* Contador de Itens */}
-              <div className="text-sm text-neutral-500 font-medium">
-                Mostrando <span className="text-neutral-900 font-bold">{startItem}</span> a{" "}
-                <span className="text-neutral-900 font-bold">{endItem}</span> de{" "}
-                <span className="text-blue-600 font-bold">{total.toLocaleString('pt-BR')}</span> produtos
-              </div>
-
+            {/* Navegação de Páginas */}
+            <div className="mt-20 border-t border-neutral-100 pt-12 flex flex-col items-center gap-8">
               {totalPages > 1 && (
-                <div className="flex items-center gap-2">
-                  {/* Botão Anterior */}
+                <div className="flex items-center gap-3">
+                  {/* Botão Voltar */}
                   {currentPage > 1 ? (
                     <Link 
                       href={`/?q=${encodeURIComponent(query)}&page=${currentPage - 1}`}
-                      className="px-5 py-2.5 border-2 border-blue-600 text-blue-600 rounded-xl font-black text-[10px] uppercase hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                      className="group flex items-center gap-2 px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-2xl font-black text-xs uppercase hover:bg-blue-600 hover:text-white transition-all shadow-sm"
                     >
-                      ← Anterior
+                      <span className="group-hover:-translate-x-1 transition-transform">←</span> Anterior
                     </Link>
                   ) : (
-                    <div className="px-5 py-2.5 border-2 border-neutral-100 text-neutral-300 rounded-xl font-black text-[10px] uppercase cursor-not-allowed">
+                    <div className="px-6 py-3 border-2 border-neutral-100 text-neutral-300 rounded-2xl font-black text-xs uppercase cursor-not-allowed">
                       ← Anterior
                     </div>
                   )}
 
-                  {/* Indicador de Páginas */}
-                  <div className="flex items-center gap-1 bg-neutral-100 p-1 rounded-xl">
-                    <span className="px-4 py-2 bg-white text-blue-700 rounded-lg shadow-sm font-black text-sm">
+                  {/* Mostrador Central (Página X de Y) */}
+                  <div className="flex items-center gap-2 bg-neutral-50 p-1.5 rounded-2xl border border-neutral-100">
+                    <span className="w-10 h-10 flex items-center justify-center bg-white text-blue-700 rounded-xl shadow-sm font-black text-sm border border-neutral-100">
                       {currentPage}
                     </span>
-                    <span className="px-2 text-neutral-400 font-bold text-xs uppercase tracking-tighter">de</span>
-                    <span className="px-4 py-2 text-neutral-600 font-black text-sm">
+                    <span className="px-2 text-neutral-400 font-bold text-[10px] uppercase tracking-tighter">de</span>
+                    <span className="w-10 h-10 flex items-center justify-center text-neutral-600 font-black text-sm">
                       {totalPages}
                     </span>
                   </div>
 
-                  {/* Botão Próxima */}
+                  {/* Botão Avançar */}
                   {currentPage < totalPages ? (
                     <Link 
                       href={`/?q=${encodeURIComponent(query)}&page=${currentPage + 1}`}
-                      className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase hover:bg-neutral-900 transition-all shadow-lg shadow-blue-100"
+                      className="group flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase hover:bg-neutral-900 transition-all shadow-xl shadow-blue-100"
                     >
-                      Próxima →
+                      Próxima <span className="group-hover:translate-x-1 transition-transform">→</span>
                     </Link>
                   ) : (
-                    <div className="px-5 py-2.5 border-2 border-neutral-100 text-neutral-300 rounded-xl font-black text-[10px] uppercase cursor-not-allowed">
+                    <div className="px-6 py-3 border-2 border-neutral-100 text-neutral-300 rounded-2xl font-black text-xs uppercase cursor-not-allowed">
                       Próxima →
                     </div>
                   )}
                 </div>
               )}
+              
+              {/* Atalho para voltar ao início se estiver longe */}
+              {currentPage > 3 && (
+                <Link href="/" className="text-[10px] font-black text-neutral-400 uppercase hover:text-blue-600 transition-colors tracking-widest">
+                  Voltar para a primeira página
+                </Link>
+              )}
             </div>
           </>
         ) : (
-          <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-neutral-50">
-            <p className="text-neutral-400 font-medium text-lg">Nenhum produto encontrado.</p>
-            <Link href="/" className="text-blue-600 font-bold mt-4 inline-block hover:underline">
-              Ver todos os produtos
+          <div className="text-center py-24 border-2 border-dashed border-neutral-100 rounded-[40px] bg-neutral-50/50">
+            <p className="text-neutral-400 font-bold text-lg mb-4">Nenhum produto encontrado.</p>
+            <Link href="/" className="bg-white border border-neutral-200 px-8 py-3 rounded-full text-blue-600 font-black text-xs uppercase shadow-sm hover:shadow-md transition-all">
+              Limpar filtros e ver tudo
             </Link>
           </div>
         )}
@@ -140,25 +153,39 @@ export default async function Home(props: { searchParams: Promise<{ q?: string; 
   );
 }
 
-// 3. Card de Produto
+// 3. Componente Card de Produto
 function ProductCard({ product }: { product: any }) {
   const imageUrl = product.thumbnail?.replace("-I.jpg", "-W.jpg") || "/placeholder.png";
 
   return (
-    <div className="group border p-4 rounded-2xl shadow-sm hover:shadow-xl transition-all bg-white flex flex-col justify-between border-neutral-100 h-full">
+    <div className="group border border-neutral-100 p-5 rounded-[32px] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 bg-white flex flex-col justify-between h-full">
       <div>
-        <div className="aspect-square relative mb-4 overflow-hidden rounded-xl bg-neutral-50 flex items-center justify-center p-4">
-          <img src={imageUrl} alt={product.title} className="object-contain max-h-full group-hover:scale-110 transition-transform duration-300" />
+        <div className="aspect-square relative mb-5 overflow-hidden rounded-[24px] bg-neutral-50 flex items-center justify-center p-6">
+          <img 
+            src={imageUrl} 
+            alt={product.title} 
+            className="object-contain max-h-full group-hover:scale-110 transition-transform duration-500" 
+          />
         </div>
-        <h3 className="text-[13px] font-bold text-neutral-600 uppercase line-clamp-2 h-10 mb-2 leading-tight">
+        <h3 className="text-[13px] font-bold text-neutral-700 uppercase line-clamp-2 h-10 mb-3 leading-tight tracking-tight">
           {product.title}
         </h3>
-        <p className="text-2xl font-black text-blue-700">
+        <div className="flex items-center gap-2 mb-4">
+           <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold uppercase">Novo</span>
+           <span className="text-[10px] text-neutral-400 font-medium">Estoque disponível</span>
+        </div>
+        <p className="text-2xl font-black text-blue-700 tracking-tighter">
           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
         </p>
       </div>
-      <a href={product.permalink} target="_blank" rel="noopener noreferrer" className="mt-6 block text-center bg-blue-600 text-white py-3 rounded-xl font-black text-xs uppercase hover:bg-neutral-900 transition-colors">
-        Comprar no ML
+      
+      <a 
+        href={product.permalink} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        className="mt-8 block text-center bg-blue-600 text-white py-4 rounded-2xl font-black text-[11px] uppercase hover:bg-neutral-900 transition-all shadow-lg shadow-blue-50 tracking-widest"
+      >
+        Comprar no Mercado Livre
       </a>
     </div>
   );
