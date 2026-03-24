@@ -1,41 +1,54 @@
 export type MenuItem = {
   label: string;
-  href?: string;
-  children?: { label: string; href: string }[];
+  children?: { label: string }[];
 };
 
 export const menu: MenuItem[] = [
   {
     label: "Motor",
     children: [
-      { label: "Óleo e Lubrificantes", href: "/motor/oleos" },
-      { label: "Filtros", href: "/motor/filtros" },
-      { label: "Correias", href: "/motor/correias" },
-      { label: "Velas", href: "/motor/velas" },
+      { label: "Bobina de Ignição" },
+      { label: "Vela de Ignição" },
+      { label: "Correia Dentada" },
+      { label: "Bomba de Água" },
+      { label: "Juntas de Motor" },
     ],
   },
   {
-    label: "Câmbio",
+    label: "Filtros",
     children: [
-      { label: "Embreagem", href: "/cambio/embreagem" },
-      { label: "Óleo de câmbio", href: "/cambio/oleo" },
-      { label: "Semi-eixos", href: "/cambio/semi-eixos" },
+      { label: "Filtro de Combustível" },
+      { label: "Filtro de Ar" },
+      { label: "Filtro de Óleo" },
+      { label: "Filtro de Cabine" },
     ],
   },
   {
     label: "Freios",
     children: [
-      { label: "Pastilhas", href: "/freios/pastilhas" },
-      { label: "Discos", href: "/freios/discos" },
-      { label: "Fluido de freio", href: "/freios/fluidos" },
+      { label: "Pastilha de Freio" },
+      { label: "Disco de Freio" },
+      { label: "Cilindro Mestre" },
+      { label: "Fluido de Freio" },
     ],
   },
   {
-    label: "Suspensão/Direção",
+    label: "Suspensão e Direção",
     children: [
-      { label: "Amortecedores", href: "/suspensao/amortecedores" },
-      { label: "Buchas", href: "/suspensao/buchas" },
-      { label: "Terminais", href: "/direcao/terminais" },
+      { label: "Amortecedor" },
+      { label: "Bandeja Suspensão" },
+      { label: "Pivô de Suspensão" },
+      { label: "Terminal de Direção" },
+      { label: "Bucha de Barra Estabilizadora" },
+    ],
+  },
+  {
+    label: "Câmbio",
+    children: [
+      { label: "Kit Embreagem" },
+      { label: "Cabo de Embreagem" },
+      { label: "Tulipa e Trizeta" },
+      { label: "Junta Homocinética" },
     ],
   },
 ];
