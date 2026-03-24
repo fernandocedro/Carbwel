@@ -1,107 +1,71 @@
-export type MenuItem = {
-  label: string;
-  children?: { label: string }[];
-};
+import { NextResponse } from 'next/server';
 
-export const menu: MenuItem[] = [
-  {
-    label: "Motor",
-    children: [
-      { label: "Anel de Pistao" },
-      { label: "Anti Chama" },
-      { label: "Bomba de Oleo" },
-      { label: "Bronzina" },
-      { label: "Carter" },
-      { label: "Comando de Valvula" },
-      { label: "Correia" },
-      { label: "Coxim de Motor" },
-      { label: "Filtro de Oleo" },
-      { label: "Flange" },
-      { label: "Interruptor" },
-      { label: "Junta de Motor" },
-      { label: "Kit Distribuicao" },
-      { label: "Pistao" },
-      { label: "Retentor" },
-      { label: "Rolamento" },
-      { label: "Tucho" },
-      { label: "Valvula" },
-    ],
-  },
-  {
-    label: "Cambio",
-    children: [
-      { label: "Atuador" },
-      { label: "Cabo de Cambio" },
-      { label: "Cilindro de Embreagem" },
-      { label: "Coifa" },
-      { label: "Coxim de Cambio" },
-      { label: "Cruzeta" },
-      { label: "Disco de Embreagem" },
-      { label: "Homocinetica" },
-      { label: "Kit Embreagem" },
-      { label: "Semi Eixo" },
-      { label: "Tulipa e Trizeta" },
-    ],
-  },
-  {
-    label: "Freios",
-    children: [
-      { label: "Cilindro de Freio" },
-      { label: "Disco de Freio" },
-      { label: "Pastilha de Freio" },
-      { label: "Patin de Freio" },
-      { label: "Sensor de Freio" },
-      { label: "Servo Freio" },
-      { label: "Tambor de Freio" },
-    ],
-  },
-  {
-    label: "Suspensao e Direcao",
-    children: [
-      { label: "Amortecedor" },
-      { label: "Articulacao" },
-      { label: "Bandeja" },
-      { label: "Barra Estabilizadora" },
-      { label: "Bieleta" },
-      { label: "Braco" },
-      { label: "Bucha" },
-      { label: "Cubo de Roda" },
-      { label: "Mola" },
-      { label: "Pivo" },
-      { label: "Terminal de Direcao" },
-    ],
-  },
-  {
-    label: "Injecao e Ignicao",
-    children: [
-      { label: "Bico Injetor" },
-      { label: "Bobina de Ignicao" },
-      { label: "Bomba de Combustivel" },
-      { label: "Cabo de Vela" },
-      { label: "Carburador" },
-      { label: "Regulador de Pressao" },
-      { label: "Sensor" },
-      { label: "Sonda Lambda" },
-    ],
-  },
-  {
-    label: "Arrefecimento",
-    children: [
-      { label: "Bomba de Agua" },
-      { label: "Mangueira" },
-      { label: "Radiador" },
-      { label: "Reservatorio" },
-      { label: "Valvula Termostatica" },
-    ],
-  },
-  {
-    label: "Eletrica",
-    children: [
-      { label: "Alternador" },
-      { label: "Motor de Partida" },
-      { label: "Rele" },
-      { label: "Chave de Seta" },
-      { label: "Chicote" },
-    ],
-  },
-];
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const rawQuery = searchParams.get('q') || '';
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = 20;
+  const offset = (page - 1) * limit;
+
+  const SELLER_ID = "72983036";
+  const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
+
+  if (!ACCESS_TOKEN) {
+    return NextResponse.json({ error: "Token não configurado" }, { status: 500 });
+  }
+
+  try {
+    // 1. Limpeza rigorosa da query para evitar erro 400 na API do ML
+    let cleanQ = rawQuery
+      .trim()
+      .replace(/\//g, ' ') // Troca barras por espaço
+      .replace(/[^\w\sÀ-ÿ]/g, '') // Remove caracteres especiais, mantém letras e acentos
+      .replace(/\s+/g, ' '); // Remove espaços duplos
+
+    // 2. Montagem da URL (Usando a rota de itens do usuário que é a mais estável para o seu token)
+    let url = `https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active&offset=${offset}&limit=${limit}`;
+
+    if (cleanQ !== "") {
+      url += `&q=${encodeURIComponent(cleanQ)}`;
+    }
+
+    const res = await fetch(url, {
+      cache: 'no-store',
+      headers: {
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+      }
+    });
+
+    const searchData = await res.json();
+    const itemIds = searchData.results || [];
+
+    // Se não houver resultados, retorna vazio em vez de dar erro
+    if (itemIds.length === 0) {
+      return NextResponse.json({ results: [], total: 0 });
+    }
+
+    // 3. Busca os detalhes dos itens encontrados
+    const idsString = itemIds.join(',');
+    const itemsRes = await fetch(`https://api.mercadolibre.com/items?ids=${idsString}`, {
+      headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+    });
+
+    const itemsData = await itemsRes.json();
+    
+    // Filtramos apenas os que retornaram sucesso (status 200)
+    const products = itemsData
+      .filter((result: any) => result.code === 200)
+      .map((result: any) => result.body);
+
+    return NextResponse.json({
+      results: products,
+      total: searchData.paging?.total || 0
+    });
+
+  } catch (error) {
+    console.error("Erro na API Carbwel:", error);
+    return NextResponse.json({ results: [], total: 0, error: "Falha na conexão" }, { status: 500 });
+  }
+}
