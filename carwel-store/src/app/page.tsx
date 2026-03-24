@@ -7,15 +7,27 @@ import CategoryNav from "./components/CategoryNav";
 import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
 
-// 1. Função de Busca interna
+// 1. Função de Busca interna - MELHORADA
 async function getCarbwelProducts(q: string = "", page: string = "1", category: string = "") {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://carbwel.vercel.app";
-    const url = `${baseUrl}/api/ml/products?q=${encodeURIComponent(q)}&page=${page}&category=${category}`;
+    
+    // Usando URLSearchParams para garantir que a URL seja montada sem erros de caracteres
+    const params = new URLSearchParams({
+      q: q,
+      page: page,
+      category: category,
+      _t: Date.now().toString() // Força a API a ignorar caches antigos
+    });
+
+    const url = `${baseUrl}/api/ml/products?${params.toString()}`;
 
     const res = await fetch(url, {
       method: 'GET',
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     if (!res.ok) throw new Error("Erro ao carregar API interna");
@@ -51,11 +63,11 @@ export default async function Home(props: {
   const endItem = Math.min(currentPage * itemsPerPage, total);
 
   const getPaginationUrl = (newPage: number) => {
-    const searchParams = new URLSearchParams();
-    if (query) searchParams.set('q', query);
-    if (category) searchParams.set('category', category);
-    searchParams.set('page', newPage.toString());
-    return `/?${searchParams.toString()}`;
+    const p = new URLSearchParams();
+    if (query) p.set('q', query);
+    if (category) p.set('category', category);
+    p.set('page', newPage.toString());
+    return `/?${p.toString()}`;
   };
 
   return (
@@ -64,6 +76,7 @@ export default async function Home(props: {
       <Header />
       <CategoryNav />
       
+      {/* Só mostra o Banner se não houver busca, categoria ou página ativa */}
       {!query && !category && currentPage === 1 && <HeroCarousel />}
       
       <main className="mx-auto max-w-7xl px-4 py-10">
@@ -93,11 +106,11 @@ export default async function Home(props: {
             {totalPages > 1 && (
               <div className="mt-20 border-t border-neutral-100 pt-12 flex flex-col items-center gap-8">
                 <div className="flex items-center gap-3">
-                  {currentPage > 1 ? (
+                  {currentPage > 1 && (
                     <Link href={getPaginationUrl(currentPage - 1)} className="px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-2xl font-black text-xs uppercase hover:bg-blue-600 hover:text-white transition-all">
                       ← Anterior
                     </Link>
-                  ) : null}
+                  )}
 
                   <div className="flex items-center gap-2 bg-neutral-50 p-1.5 rounded-2xl border border-neutral-100">
                     <span className="w-10 h-10 flex items-center justify-center bg-white text-blue-700 rounded-xl font-black text-sm border border-neutral-100 shadow-sm">
@@ -109,11 +122,11 @@ export default async function Home(props: {
                     </span>
                   </div>
 
-                  {currentPage < totalPages ? (
+                  {currentPage < totalPages && (
                     <Link href={getPaginationUrl(currentPage + 1)} className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase hover:bg-neutral-900 transition-all shadow-xl shadow-blue-100">
                       Próxima →
                     </Link>
-                  ) : null}
+                  )}
                 </div>
               </div>
             )}
@@ -132,8 +145,9 @@ export default async function Home(props: {
   );
 }
 
-// 3. Componente Card (Interno para evitar erro de importação)
+// 3. Componente Card
 function ProductCard({ product }: { product: any }) {
+  // Melhora a qualidade da imagem trocando o sufixo do ML
   const imageUrl = product.thumbnail?.replace("-I.jpg", "-W.jpg") || "/placeholder.png";
   return (
     <div className="group border border-neutral-100 p-5 rounded-[32px] shadow-sm hover:shadow-2xl transition-all bg-white flex flex-col justify-between h-full">
