@@ -1,41 +1,23 @@
 export type MenuItem = {
   label: string;
-  slug?: string; // Usaremos slug para a busca
+  slug?: string;
   href?: string;
   children?: { label: string; slug: string; href?: string }[];
 };
 
 export const menu: MenuItem[] = [
   {
-    label: "Alimentação e Carburação",
+    label: "Motor e Carburação",
     children: [
       { label: "Carburadores", slug: "Carburador" },
       { label: "Kits de Reparo", slug: "Kit+Reparo" },
       { label: "Bombas de Combustível", slug: "Bomba+Combustivel" },
-      { label: "Bicos Injetores", slug: "Bico+Injetor" },
-      { label: "Boias de Tanque/Carb", slug: "Boia" },
-      { label: "Válvulas de Agulha", slug: "Valvula+Agulha" },
-      { label: "Giclês", slug: "Gicle" },
-    ],
-  },
-  {
-    label: "Ignição",
-    children: [
+      { label: "Bombas de Água", slug: "Bomba+Agua" },
       { label: "Bobinas de Ignição", slug: "Bobina" },
       { label: "Cabos de Vela", slug: "Cabo+Vela" },
-      { label: "Velas de Ignição", slug: "Vela" },
-      { label: "Distribuidores", slug: "Distribuidor" },
-      { label: "Módulos de Ignição", slug: "Modulo+Ignicao" },
-    ],
-  },
-  {
-    label: "Motor e Arrefecimento",
-    children: [
-      { label: "Bombas de Água", slug: "Bomba+Agua" },
-      { label: "Jogos de Juntas", slug: "Junta" },
-      { label: "Correias Dentadas", slug: "Correia" },
-      { label: "Coxins", slug: "Coxin" },
-      { label: "Sensores e Sondas", slug: "Sensor" },
+      { label: "Injetores", slug: "Injetor" },
+      { label: "Juntas", slug: "Junta" },
+      { label: "Giclês", slug: "Gicle" },
     ],
   },
   {
@@ -47,7 +29,16 @@ export const menu: MenuItem[] = [
     ],
   },
   {
-    label: "Acessórios e Outros",
+    label: "Suspensão e Direção",
+    children: [
+      { label: "Pivôs", slug: "Pivo" },
+      { label: "Bieletas", slug: "Bieleta" },
+      { label: "Terminais de Direção", slug: "Terminal+Direcao" },
+      { label: "Rolamentos", slug: "Rolamento" },
+    ],
+  },
+  {
+    label: "Acessórios",
     children: [
       { label: "Engates de Reboque", slug: "Engate" },
       { label: "Irrigação e Jardim", slug: "Irrigacao" },
