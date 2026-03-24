@@ -7,7 +7,7 @@ export const menu: MenuItem[] = [
   {
     label: "Motor",
     children: [
-      { label: "Anel de Pistão" },
+      { label: "Anel de Pistao" },
       { label: "Anti Chama" },
       { label: "Bomba de Oleo" },
       { label: "Bronzina" },
@@ -56,7 +56,7 @@ export const menu: MenuItem[] = [
     ],
   },
   {
-    label: "Suspensão/Direção",
+    label: "Suspensao e Direcao",
     children: [
       { label: "Amortecedor" },
       { label: "Articulacao" },
@@ -72,7 +72,7 @@ export const menu: MenuItem[] = [
     ],
   },
   {
-    label: "Injeção/Ignição",
+    label: "Injecao e Ignicao",
     children: [
       { label: "Bico Injetor" },
       { label: "Bobina de Ignicao" },
