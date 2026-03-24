@@ -2,13 +2,28 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  
+  // Pegamos a página atual. Se não vier nada, assume 1.
+  const page = parseInt(searchParams.get('page') || '1');
+  const query = searchParams.get('q') || '';
+  const limit = 20;
+  const offset = (page - 1) * limit;
+
   const SELLER_ID = "72983036";
   const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
 
   try {
-    // Trocamos 'me' pelo SELLER_ID real para evitar o erro "UserID is mandatory"
-    const res = await fetch(`https://api.mercadolibre.com/users/${SELLER_ID}/items/search?status=active`, {
+    // 1. Buscamos os IDs respeitando o offset e o limit (PAGINAÇÃO REAL)
+    // Se houver busca (query), usamos a busca geral. Se não, usamos a busca de itens do usuário.
+    let searchUrl = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&offset=${offset}&limit=${limit}`;
+    
+    if (query) {
+      searchUrl += `&q=${encodeURIComponent(query)}`;
+    }
+
+    const res = await fetch(searchUrl, {
       cache: 'no-store',
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`,
@@ -16,35 +31,20 @@ export async function GET() {
       }
     });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      return NextResponse.json({ ok: false, error: "Erro na API", details: errorData }, { status: res.status });
-    }
-
     const searchData = await res.json();
-    const itemIds = searchData.results || [];
-
-    if (itemIds.length === 0) {
-      return NextResponse.json({ ok: true, message: "Nenhum produto ativo encontrado", results: [] });
-    }
-
-    // Busca os detalhes dos itens (limite de 20 para carregar rápido)
-    const idsString = itemIds.slice(0, 20).join(',');
-    const itemsRes = await fetch(`https://api.mercadolibre.com/items?ids=${idsString}`, {
-       headers: { 
-         'Authorization': `Bearer ${ACCESS_TOKEN}`,
-         'User-Agent': 'CarbwelSite/1.0'
-       }
-    });
-
-    const itemsData = await itemsRes.json();
     
-    // Filtramos apenas os itens que retornaram com sucesso (code 200)
-    const finalProducts = itemsData
-      .filter((item: any) => item.code === 200)
-      .map((item: any) => item.body);
+    // O Mercado Livre já devolve os dados básicos no search, 
+    // então não precisamos fazer um segundo fetch por IDs a menos que queira dados muito específicos.
+    // Isso deixa sua API muito mais rápida!
+    const results = searchData.results || [];
+    const total = searchData.paging?.total || 0;
 
-    return NextResponse.json(finalProducts);
+    // Retornamos um objeto que a sua Home entende (com results e total)
+    return NextResponse.json({
+      results: results,
+      total: total,
+      paging: searchData.paging // Passamos o paging original para garantir
+    });
 
   } catch (error) {
     console.error("Erro técnico:", error);
