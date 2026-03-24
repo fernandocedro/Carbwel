@@ -1,154 +1,143 @@
-"use client";
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, MenuIcon } from "./icons"; // Certifique-se que esses arquivos existem
-import { menu } from "./data";
+import TopBar from "./components/TopBar";
+import Header from "./components/Header";
+import CategoryNav from "./components/CategoryNav";
+import HeroCarousel from "./components/HeroCarousel";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
-function useIsDesktop(breakpoint = 768) {
-  const [isDesktop, setIsDesktop] = useState(false);
-  useEffect(() => {
-    // Proteção para evitar erro no servidor (SSR)
-    if (typeof window === "undefined") return;
+// 1. Função de Busca Robusta
+async function getCarbwelProducts(q: string = "", page: string = "1") {
+  const SELLER_ID = "72983036";
+  const ACCESS_TOKEN = process.env.ML_ACCESS_TOKEN;
+  const limit = 20;
+  const currentPage = Math.max(1, parseInt(page) || 1);
+  const offset = (currentPage - 1) * limit;
 
-    const mq = window.matchMedia(`(min-width: ${breakpoint + 1}px)`);
-    const update = () => setIsDesktop(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, [breakpoint]);
-  return isDesktop;
+  try {
+    let url = `https://api.mercadolibre.com/sites/MLB/search?seller_id=${SELLER_ID}&offset=${offset}&limit=${limit}`;
+    
+    if (q && q.trim() !== "") {
+      url += `&q=${encodeURIComponent(q.trim())}`;
+    }
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${ACCESS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-store'
+    });
+
+    if (!res.ok) return { products: [], total: 0 };
+
+    const data = await res.json();
+    return { 
+      products: data.results || [], 
+      total: data.paging?.total || 0 
+    };
+  } catch (error) {
+    return { products: [], total: 0 };
+  }
 }
 
-export default function CategoryNav() {
-  const isDesktop = useIsDesktop(768);
-  const router = useRouter();
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [allOpen, setAllOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-
-  // Fecha menus ao clicar fora
-  useEffect(() => {
-    const onClickOutside = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpenIndex(null);
-        setAllOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
-
-  // Garante que 'items' seja sempre um array, mesmo que 'menu' falhe
-  const items = useMemo(() => (Array.isArray(menu) ? menu : []), []);
-
-  const closeMenus = () => {
-    setOpenIndex(null);
-    setAllOpen(false);
-  };
-
-  const formatQuery = (label: string) => {
-    if (!label) return "";
-    return label
-      .replace(/\//g, " ")       // Remove todas as barras
-      .replace(/\sde\s/gi, " ")  // Remove preposições
-      .replace(/\spara\s/gi, " ")
-      .trim();
-  };
-
-  const handleSearch = (label: string) => {
-    const q = formatQuery(label);
-    closeMenus();
-    // No Next 15, passamos a URL e o scroll opcional
-    router.push(`/?q=${encodeURIComponent(q)}`, { scroll: true });
-  };
+// 2. Componente de Página
+// No Next.js 15, searchParams DEVE ser uma Promise na definição do tipo
+export default async function Home({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ q?: string; page?: string }> 
+}) {
+  
+  // RESOLVENDO A PROMISE (Obrigatório no Next 15)
+  const resolvedParams = await searchParams;
+  const query = resolvedParams?.q || "";
+  const pageStr = resolvedParams?.page || "1";
+  
+  // Buscando os dados
+  const { products, total } = await getCarbwelProducts(query, pageStr);
+  
+  const currentPage = Math.max(1, parseInt(pageStr) || 1);
+  const totalPages = Math.ceil(total / 20);
 
   return (
-    <div ref={rootRef} className="border-b border-neutral-200 bg-white sticky top-0 z-40">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
-        
-        <nav className="hidden items-center gap-6 md:flex">
-          {items.map((it, idx) => (
-            <div
-              key={it.label || idx}
-              className="relative"
-              onMouseEnter={() => isDesktop && setOpenIndex(idx)}
-              onMouseLeave={() => isDesktop && setOpenIndex(null)}
-            >
-              <button
-                type="button"
-                className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-blue-600 transition-colors uppercase tracking-tight"
-                onClick={() => {
-                  if (isDesktop) handleSearch(it.label);
-                  else setOpenIndex(openIndex === idx ? null : idx);
-                }}
-              >
-                {it.label}
-                <ChevronDown className={`h-3 w-3 transition-transform ${openIndex === idx ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Dropdown Individual */}
-              {openIndex === idx && it.children && it.children.length > 0 && (
-                <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl">
-                  {it.children.map((c: any) => (
-                    <Link
-                      key={c.label}
-                      href={`/?q=${encodeURIComponent(formatQuery(c.label))}`}
-                      onClick={closeMenus}
-                      className="block rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-blue-50 hover:text-blue-700 transition-all"
-                    >
-                      {c.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </nav>
-
-        {/* Botão Todas as Categorias */}
-        <button
-          type="button"
-          className="ml-auto flex items-center gap-2 text-xs font-black tracking-tighter text-blue-700 hover:opacity-70 transition-opacity"
-          onClick={() => setAllOpen((v) => !v)}
-        >
-          <MenuIcon className="h-5 w-5" />
-          <span className="hidden sm:inline">TODAS AS CATEGORIAS</span>
-        </button>
-      </div>
-
-      {/* Painel Geral de Categorias */}
-      {allOpen && (
-        <div className="absolute left-0 right-0 z-50 bg-white border-b shadow-2xl animate-in slide-in-from-top-2 duration-200">
-          <div className="mx-auto max-w-7xl p-6">
-            <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-              {items.map((it) => (
-                <div key={it.label} className="space-y-3">
-                  <button 
-                    onClick={() => handleSearch(it.label)}
-                    className="text-[11px] font-black text-blue-900 hover:text-blue-600 uppercase text-left w-full border-b pb-1"
-                  >
-                    {it.label}
-                  </button>
-                  <div className="flex flex-col gap-1">
-                    {it.children?.map((c: any) => (
-                      <Link
-                        key={c.label}
-                        href={`/?q=${encodeURIComponent(formatQuery(c.label))}`}
-                        onClick={closeMenus}
-                        className="text-[11px] text-neutral-500 hover:text-blue-600 transition-colors"
-                      >
-                        {c.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+    <div className="min-h-screen bg-white">
+      <TopBar />
+      <Header />
+      <CategoryNav />
+      
+      {/* Hero só na Home */}
+      {!query && currentPage === 1 && <HeroCarousel />}
+      
+      <main className="mx-auto max-w-7xl px-4 py-10">
+        <div className="mb-8 border-b pb-4">
+          <h2 className="text-2xl font-bold text-neutral-800 uppercase">
+            {query ? `Busca: ${query}` : "Destaques"}
+          </h2>
+          <p className="text-blue-600 font-bold">{total.toLocaleString('pt-BR')} anúncios</p>
         </div>
-      )}
+
+        {products.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {products.map((product: any) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 border-2 border-dashed rounded-3xl">
+            <p className="text-neutral-400 font-medium">Nenhum produto encontrado.</p>
+            <Link href="/" className="text-blue-600 font-bold mt-2 inline-block">Ver todos</Link>
+          </div>
+        )}
+
+        {/* Paginação Simples */}
+        {totalPages > 1 && (
+          <div className="mt-12 flex justify-center gap-4">
+            {currentPage > 1 && (
+              <Link href={`/?q=${query}&page=${currentPage - 1}`} className="px-4 py-2 border rounded-lg font-bold">
+                Anterior
+              </Link>
+            )}
+            <span className="px-4 py-2 bg-neutral-100 rounded-lg font-bold">{currentPage}</span>
+            {currentPage < totalPages && (
+              <Link href={`/?q=${query}&page=${currentPage + 1}`} className="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">
+                Próxima
+              </Link>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+// 3. Card de Produto (Sem frescuras para não quebrar)
+function ProductCard({ product }: { product: any }) {
+  const img = product.thumbnail?.replace("-I.jpg", "-W.jpg") || "";
+
+  return (
+    <div className="border p-4 rounded-xl shadow-sm hover:shadow-md bg-white flex flex-col justify-between">
+      <div>
+        <div className="aspect-square relative mb-4 flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
+          <img src={img} alt="" className="max-h-full object-contain p-2" />
+        </div>
+        <h3 className="text-[13px] font-bold text-neutral-700 uppercase line-clamp-2 h-10 mb-2 leading-tight">
+          {product.title}
+        </h3>
+        <p className="text-xl font-black text-blue-700">
+          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+        </p>
+      </div>
+      <a 
+        href={product.permalink} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="mt-4 block text-center bg-blue-600 text-white py-2 rounded-lg font-bold text-[10px] uppercase"
+      >
+        Comprar no ML
+      </a>
     </div>
   );
 }
